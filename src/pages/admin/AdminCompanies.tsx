@@ -32,61 +32,9 @@ interface Company {
   adminEmail: string;
 }
 
-// Mock data
-const mockCompanies: Company[] = [
-  {
-    id: '1',
-    name: 'TechCorp Solutions',
-    domain: 'techcorp.com',
-    email: 'admin@techcorp.com',
-    phone: '+33 1 23 45 67 89',
-    address: '123 Rue de la Tech, 75008 Paris',
-    description: 'Société de solutions technologiques innovantes',
-    status: 'active',
-    subscription: 'enterprise',
-    usersCount: 45,
-    createdAt: '2024-01-15',
-    lastActivity: '2024-01-20',
-    adminName: 'Jean Dupont',
-    adminEmail: 'jean.dupont@techcorp.com'
-  },
-  {
-    id: '2',
-    name: 'Digital Marketing Pro',
-    domain: 'digitalmarketing.fr',
-    email: 'contact@digitalmarketing.fr',
-    phone: '+33 1 98 76 54 32',
-    address: '456 Avenue du Marketing, 69000 Lyon',
-    description: 'Agence de marketing digital',
-    status: 'active',
-    subscription: 'premium',
-    usersCount: 23,
-    createdAt: '2024-01-10',
-    lastActivity: '2024-01-19',
-    adminName: 'Marie Martin',
-    adminEmail: 'marie.martin@digitalmarketing.fr'
-  },
-  {
-    id: '3',
-    name: 'StartUp Innovation',
-    domain: 'startup-innov.com',
-    email: 'hello@startup-innov.com',
-    phone: '+33 1 11 22 33 44',
-    address: '789 Boulevard Innovation, 33000 Bordeaux',
-    description: 'Startup spécialisée dans l\'innovation',
-    status: 'inactive',
-    subscription: 'free',
-    usersCount: 8,
-    createdAt: '2024-01-05',
-    lastActivity: '2024-01-15',
-    adminName: 'Pierre Leroy',
-    adminEmail: 'pierre.leroy@startup-innov.com'
-  }
-];
-
 export function AdminCompanies() {
   const { toast } = useToast();
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>('all');
@@ -348,7 +296,7 @@ export function AdminCompanies() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="TechCorp Solutions"
+                    placeholder="Nom de l'entreprise"
                   />
                 </div>
                 <div className="space-y-2">
@@ -738,7 +686,7 @@ export function AdminCompanies() {
                   id="edit-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="TechCorp Solutions"
+                  placeholder="Nom de l'entreprise"
                 />
               </div>
               <div className="space-y-2">

@@ -16,14 +16,22 @@ import {
   CheckCircle, 
   Settings,
   Key,
-  Shield
+  Shield,
+  Server
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { localDatabaseConfigService, type DatabaseConfig } from '@/services/localPostgresService';
+import { SyncButton } from '@/components/admin/SyncButton';
+import { DatabaseStatus } from '@/components/admin/DatabaseStatus';
+import { ConfigManager } from '@/components/admin/ConfigManager';
+import { autoCreateDatabase } from '@/services/autoDatabaseService';
 
 export const AdminDatabase = () => {
   const { toast } = useToast();
 
   // États pour la configuration de base de données
+  const [dbType, setDbType] = useState<'mysql' | 'postgresql'>('mysql');
   const [dbConfig, setDbConfig] = useState({
     host: 'localhost',
     port: '3306',
@@ -35,39 +43,260 @@ export const AdminDatabase = () => {
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testResult, setTestResult] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fonction pour mettre à jour le port par défaut selon le type de DB
+  const handleDbTypeChange = (newType: 'mysql' | 'postgresql') => {
+    setDbType(newType);
+    setDbConfig(prev => ({
+      ...prev,
+      port: newType === 'mysql' ? '3306' : '5432'
+    }));
+  };
+
+  // Charger la configuration existante au montage du composant
+  React.useEffect(() => {
+    loadConfiguration();
+  }, []);
+
+  const loadConfiguration = async () => {
+    setIsLoading(true);
+    try {
+      const config = await localDatabaseConfigService.load();
+      if (config) {
+        setDbType(config.db_type);
+        setDbConfig({
+          host: config.host,
+          port: config.port.toString(),
+          database: config.database_name,
+          username: config.username,
+          password: config.password,
+          ssl: config.ssl_enabled,
+        });
+        setConnectionStatus(config.test_status === 'success' ? 'success' : 'idle');
+        setTestResult(config.test_message || '');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fonction de test de connexion
   const testConnection = async () => {
     setConnectionStatus('testing');
     setTestResult('');
 
-    // Simulation du test de connexion
-    setTimeout(() => {
-      if (dbConfig.host && dbConfig.database && dbConfig.username && dbConfig.password) {
+    if (!dbConfig.host || !dbConfig.database || !dbConfig.username || !dbConfig.password) {
+      setConnectionStatus('error');
+      setTestResult('Erreur: Veuillez remplir tous les champs obligatoires.');
+      toast({
+        title: "Test de connexion échoué",
+        description: "Vérifiez vos paramètres de connexion.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const configToTest: DatabaseConfig = {
+        db_type: dbType,
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database_name: dbConfig.database,
+        username: dbConfig.username,
+        password: dbConfig.password,
+        ssl_enabled: dbConfig.ssl,
+        ssl_verify_cert: true,
+        charset: dbType === 'mysql' ? 'utf8mb4' : 'UTF8',
+        schema_name: dbType === 'postgresql' ? 'public' : undefined,
+        timezone: dbType === 'postgresql' ? 'UTC' : undefined,
+        extensions: dbType === 'postgresql' ? ['uuid-ossp', 'pg_trgm'] : undefined,
+        max_connections: 50,
+        connection_timeout: 30,
+        query_timeout: 60,
+        is_active: true,
+      };
+
+      const result = await localDatabaseConfigService.testConnection(configToTest);
+      
+      if (result.success) {
         setConnectionStatus('success');
-        setTestResult('Connexion réussie à la base de données MySQL !');
+        setTestResult(`Connexion réussie à la base de données ${dbType.toUpperCase()} !`);
         toast({
           title: "Test de connexion réussi",
-          description: "La connexion à la base de données a été établie avec succès.",
+          description: `La connexion à la base de données ${dbType.toUpperCase()} a été établie avec succès.`,
         });
       } else {
         setConnectionStatus('error');
-        setTestResult('Erreur: Veuillez remplir tous les champs obligatoires.');
+        setTestResult(result.message);
         toast({
           title: "Test de connexion échoué",
-          description: "Vérifiez vos paramètres de connexion.",
+          description: result.message,
           variant: "destructive",
         });
       }
-    }, 2000);
+    } catch (error) {
+      setConnectionStatus('error');
+      setTestResult('Erreur lors du test de connexion');
+      toast({
+        title: "Test de connexion échoué",
+        description: "Erreur lors du test de connexion.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const saveConfiguration = () => {
-    // Ici vous sauvegarderiez la configuration dans votre système
-    toast({
-      title: "Configuration sauvegardée",
-      description: "Les paramètres de base de données ont été sauvegardés.",
-    });
+  // Fonction de création automatique de base de données
+  const createDatabaseAutomatically = async () => {
+    setConnectionStatus('testing');
+    setTestResult('');
+
+    if (!dbConfig.host || !dbConfig.database || !dbConfig.username || !dbConfig.password) {
+      setConnectionStatus('error');
+      setTestResult('Erreur: Veuillez remplir tous les champs obligatoires.');
+      toast({
+        title: "Création échouée",
+        description: "Vérifiez vos paramètres de connexion.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const configToCreate: DatabaseConfig = {
+        db_type: dbType,
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database_name: dbConfig.database,
+        username: dbConfig.username,
+        password: dbConfig.password,
+        ssl_enabled: dbConfig.ssl,
+        ssl_verify_cert: true,
+        charset: dbType === 'mysql' ? 'utf8mb4' : 'UTF8',
+        schema_name: dbType === 'postgresql' ? 'public' : undefined,
+        timezone: dbType === 'postgresql' ? 'UTC' : undefined,
+        extensions: dbType === 'postgresql' ? ['uuid-ossp', 'pg_trgm'] : undefined,
+        max_connections: 50,
+        connection_timeout: 30,
+        query_timeout: 60,
+        is_active: true,
+        test_status: 'never_tested',
+        test_message: ''
+      };
+
+      const result = await autoCreateDatabase(configToCreate);
+      
+      if (result.success) {
+        setConnectionStatus('success');
+        setTestResult(`✅ ${result.message}`);
+        
+        toast({
+          title: "Base de données créée avec succès",
+          description: result.message,
+        });
+        
+        // Afficher les détails
+        if (result.details) {
+          console.log('📊 Détails de la création:', result.details);
+          if (result.details.databaseCreated) {
+            toast({
+              title: "Base de données créée",
+              description: `La base '${dbConfig.database}' a été créée automatiquement`,
+            });
+          }
+          if (result.details.extensionsCreated.length > 0) {
+            toast({
+              title: "Extensions créées",
+              description: `Extensions: ${result.details.extensionsCreated.join(', ')}`,
+            });
+          }
+          if (result.details.tablesCreated > 0) {
+            toast({
+              title: "Tables créées",
+              description: `${result.details.tablesCreated} tables créées automatiquement`,
+            });
+          }
+        }
+      } else {
+        setConnectionStatus('error');
+        setTestResult(`❌ ${result.message}`);
+        toast({
+          title: "Erreur de création",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setConnectionStatus('error');
+      setTestResult(`❌ Erreur: ${error}`);
+      toast({
+        title: "Erreur de création",
+        description: "Impossible de créer la base de données automatiquement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveConfiguration = async () => {
+    if (!dbConfig.host || !dbConfig.database || !dbConfig.username || !dbConfig.password) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const configToSave: DatabaseConfig = {
+        db_type: dbType,
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database_name: dbConfig.database,
+        username: dbConfig.username,
+        password: dbConfig.password,
+        ssl_enabled: dbConfig.ssl,
+        ssl_verify_cert: true,
+        charset: dbType === 'mysql' ? 'utf8mb4' : 'UTF8',
+        schema_name: dbType === 'postgresql' ? 'public' : undefined,
+        timezone: dbType === 'postgresql' ? 'UTC' : undefined,
+        extensions: dbType === 'postgresql' ? ['uuid-ossp', 'pg_trgm'] : undefined,
+        max_connections: 50,
+        connection_timeout: 30,
+        query_timeout: 60,
+        is_active: true,
+        test_status: connectionStatus === 'success' ? 'success' : 'never_tested',
+        test_message: testResult,
+      };
+
+      const success = await localDatabaseConfigService.save(configToSave);
+      
+      if (success) {
+        toast({
+          title: "Configuration sauvegardée",
+          description: "Les paramètres de base de données ont été sauvegardés avec succès.",
+        });
+      } else {
+        toast({
+          title: "Erreur de sauvegarde",
+          description: "Impossible de sauvegarder la configuration.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: "Erreur de sauvegarde",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getStatusIcon = () => {
@@ -107,7 +336,7 @@ export const AdminDatabase = () => {
               Configuration base de données
             </h1>
             <p className="text-muted-foreground">
-              Configurez la connexion à votre base de données MySQL
+              Configurez la connexion à votre base de données (MySQL ou PostgreSQL)
             </p>
           </div>
           
@@ -125,11 +354,35 @@ export const AdminDatabase = () => {
           </AlertDescription>
         </Alert>
 
+        {/* Alert d'information sur le type de base de données */}
+        {dbType === 'postgresql' && (
+          <Alert>
+            <Database className="h-4 w-4" />
+            <AlertDescription>
+              <strong>PostgreSQL :</strong> Cette base de données est optimisée pour les applications complexes avec des requêtes avancées, 
+              la recherche textuelle et les données géospatiales. Le schéma est déjà compatible avec PostgreSQL.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {dbType === 'mysql' && (
+          <Alert>
+            <Server className="h-4 w-4" />
+            <AlertDescription>
+              <strong>MySQL :</strong> Cette base de données est idéale pour les applications web avec des performances élevées 
+              et une facilité de maintenance. Le schéma sera adapté automatiquement pour MySQL.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="connection" className="space-y-4">
           <TabsList>
             <TabsTrigger value="connection">Connexion</TabsTrigger>
             <TabsTrigger value="advanced">Avancé</TabsTrigger>
             <TabsTrigger value="monitoring">Surveillance</TabsTrigger>
+            <TabsTrigger value="status">Statut</TabsTrigger>
+            <TabsTrigger value="sync">Synchronisation</TabsTrigger>
+            <TabsTrigger value="manager">Gestionnaire</TabsTrigger>
           </TabsList>
 
           {/* Onglet Configuration de connexion */}
@@ -138,13 +391,37 @@ export const AdminDatabase = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Paramètres de connexion MySQL
+                  Paramètres de connexion {dbType.toUpperCase()}
                 </CardTitle>
                 <CardDescription>
-                  Configurez les paramètres pour vous connecter à votre base de données MySQL
+                  Configurez les paramètres pour vous connecter à votre base de données {dbType.toUpperCase()}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <form onSubmit={(e) => e.preventDefault()}>
+                {/* Sélecteur de type de base de données */}
+                <div className="space-y-2">
+                  <Label htmlFor="dbType">Type de base de données *</Label>
+                  <Select value={dbType} onValueChange={handleDbTypeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez le type de base de données" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mysql">
+                        <div className="flex items-center gap-2">
+                          <Server className="h-4 w-4" />
+                          MySQL
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="postgresql">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4" />
+                          PostgreSQL
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="host">Hôte / Serveur *</Label>
@@ -162,7 +439,7 @@ export const AdminDatabase = () => {
                       id="port"
                       value={dbConfig.port}
                       onChange={(e) => setDbConfig(prev => ({ ...prev, port: e.target.value }))}
-                      placeholder="3306"
+                      placeholder={dbType === 'mysql' ? '3306' : '5432'}
                     />
                   </div>
 
@@ -210,7 +487,7 @@ export const AdminDatabase = () => {
                 <div className="flex gap-4 pt-4">
                   <Button 
                     onClick={testConnection} 
-                    disabled={connectionStatus === 'testing'}
+                    disabled={connectionStatus === 'testing' || isLoading}
                     variant="outline"
                   >
                     <TestTube className="h-4 w-4 mr-2" />
@@ -218,13 +495,23 @@ export const AdminDatabase = () => {
                   </Button>
                   
                   <Button 
+                    onClick={createDatabaseAutomatically}
+                    disabled={connectionStatus === 'testing' || isLoading}
+                    variant="secondary"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    {connectionStatus === 'testing' ? 'Création...' : 'Créer automatiquement'}
+                  </Button>
+                  
+                  <Button 
                     onClick={saveConfiguration}
-                    disabled={connectionStatus !== 'success'}
+                    disabled={isSaving || isLoading}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    Sauvegarder la configuration
+                    {isSaving ? 'Sauvegarde...' : 'Sauvegarder la configuration'}
                   </Button>
                 </div>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
@@ -317,10 +604,71 @@ export const AdminDatabase = () => {
                       <Label htmlFor="charset">Jeu de caractères</Label>
                       <Input
                         id="charset"
-                        defaultValue="utf8mb4"
-                        placeholder="utf8mb4"
+                        defaultValue={dbType === 'mysql' ? 'utf8mb4' : 'UTF8'}
+                        placeholder={dbType === 'mysql' ? 'utf8mb4' : 'UTF8'}
                       />
                     </div>
+
+                    {dbType === 'postgresql' && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="schema">Schéma par défaut</Label>
+                          <Input
+                            id="schema"
+                            defaultValue="public"
+                            placeholder="public"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="timezone">Fuseau horaire</Label>
+                          <Input
+                            id="timezone"
+                            defaultValue="UTC"
+                            placeholder="UTC"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Extensions PostgreSQL</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="enableUuid"
+                                className="rounded border-gray-300"
+                                defaultChecked={true}
+                              />
+                              <Label htmlFor="enableUuid" className="text-sm">
+                                Activer l'extension uuid-ossp
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="enableTrgm"
+                                className="rounded border-gray-300"
+                                defaultChecked={true}
+                              />
+                              <Label htmlFor="enableTrgm" className="text-sm">
+                                Activer l'extension pg_trgm (recherche textuelle)
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="enablePostgis"
+                                className="rounded border-gray-300"
+                                defaultChecked={false}
+                              />
+                              <Label htmlFor="enablePostgis" className="text-sm">
+                                Activer l'extension PostGIS (géolocalisation)
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -338,9 +686,9 @@ export const AdminDatabase = () => {
               {/* Statistiques de performance */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Statistiques de performance</CardTitle>
+                  <CardTitle>Statistiques de performance {dbType.toUpperCase()}</CardTitle>
                   <CardDescription>
-                    Surveillez les performances de votre base de données en temps réel
+                    Surveillez les performances de votre base de données {dbType.toUpperCase()} en temps réel
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -365,6 +713,29 @@ export const AdminDatabase = () => {
                       <p className="text-xs text-success">Performance excellente</p>
                     </div>
                   </div>
+
+                  {dbType === 'postgresql' && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h4 className="font-medium mb-4">Métriques PostgreSQL spécifiques</h4>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Cache hit ratio</p>
+                          <p className="text-2xl font-bold">98.5%</p>
+                          <p className="text-xs text-success">Excellent</p>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Locks actifs</p>
+                          <p className="text-2xl font-bold">3</p>
+                          <p className="text-xs text-muted-foreground">Normal</p>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Taille de la base</p>
+                          <p className="text-2xl font-bold">2.3 GB</p>
+                          <p className="text-xs text-muted-foreground">Croissance stable</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -402,6 +773,21 @@ export const AdminDatabase = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Onglet Statut */}
+          <TabsContent value="status">
+            <DatabaseStatus />
+          </TabsContent>
+
+          {/* Onglet Synchronisation */}
+          <TabsContent value="sync">
+            <SyncButton />
+          </TabsContent>
+
+          {/* Onglet Gestionnaire */}
+          <TabsContent value="manager">
+            <ConfigManager />
           </TabsContent>
         </Tabs>
       </div>

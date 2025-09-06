@@ -47,10 +47,7 @@ export function AdminCommunity() {
 
   // Mock moderated posts data
   const moderatedPosts = posts.filter(post => post.category === 'general').slice(0, 5);
-  const reportedContent = [
-    { id: 1, type: 'post', title: 'Contenu inapproprié signalé', author: 'Jean Dupont', reports: 3, status: 'pending' },
-    { id: 2, type: 'comment', title: 'Commentaire offensant', author: 'Marie Martin', reports: 2, status: 'pending' },
-  ];
+  const reportedContent: any[] = [];
 
   const handleModerationAction = async (action: string, itemId: number) => {
     setIsLoading(true);

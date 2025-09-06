@@ -48,86 +48,9 @@ interface ApiKey {
 }
 
 // Mock data
-const mockSecurityEvents: SecurityEvent[] = [
-  {
-    id: '1',
-    type: 'suspicious_activity',
-    severity: 'high',
-    user: 'jean.dupont@exemple.com',
-    ip: '192.168.1.100',
-    timestamp: '2024-01-25T14:30:00Z',
-    description: 'Tentatives de connexion multiples depuis une nouvelle localisation',
-    resolved: false
-  },
-  {
-    id: '2',
-    type: 'login_failed',
-    severity: 'medium',
-    user: 'marie.martin@exemple.com',
-    ip: '10.0.0.45',
-    timestamp: '2024-01-25T13:15:00Z',
-    description: 'Échec de connexion - mot de passe incorrect (3e tentative)',
-    resolved: true
-  },
-  {
-    id: '3',
-    type: 'admin_action',
-    severity: 'low',
-    user: 'admin@exemple.com',
-    ip: '192.168.1.10',
-    timestamp: '2024-01-25T12:00:00Z',
-    description: 'Modification des paramètres de sécurité',
-    resolved: true
-  }
-];
-
-const mockSecurityRules: SecurityRule[] = [
-  {
-    id: '1',
-    name: 'Détection de force brute',
-    description: 'Bloque automatiquement après 5 tentatives de connexion échouées',
-    enabled: true,
-    severity: 'high',
-    actions: ['block_ip', 'notify_admin']
-  },
-  {
-    id: '2',
-    name: 'Géolocalisation suspecte',
-    description: 'Alerte lors de connexions depuis de nouveaux pays',
-    enabled: true,
-    severity: 'medium',
-    actions: ['require_2fa', 'notify_user']
-  },
-  {
-    id: '3',
-    name: 'Activité nocturne',
-    description: 'Signale les connexions en dehors des heures de bureau',
-    enabled: false,
-    severity: 'low',
-    actions: ['log_event']
-  }
-];
-
-const mockApiKeys: ApiKey[] = [
-  {
-    id: '1',
-    name: 'API Principal',
-    key: 'sk_live_*********************xyz',
-    permissions: ['read', 'write', 'admin'],
-    lastUsed: '2024-01-25T10:30:00Z',
-    created: '2024-01-01T00:00:00Z',
-    active: true
-  },
-  {
-    id: '2',
-    name: 'API Lecture seule',
-    key: 'sk_live_*********************abc',
-    permissions: ['read'],
-    lastUsed: '2024-01-24T16:45:00Z',
-    created: '2024-01-15T00:00:00Z',
-    active: true
-  }
-];
+const mockSecurityEvents: SecurityEvent[] = [];
+const mockSecurityRules: SecurityRule[] = [];
+const mockApiKeys: ApiKey[] = [];
 
 export function AdminSecurity() {
   const { toast } = useToast();

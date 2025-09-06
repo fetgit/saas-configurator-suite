@@ -120,17 +120,12 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
 
   // Statistiques
   const [stats, setStats] = useState<ChatbotStats>({
-    totalConversations: 23,
-    totalMessages: 156,
-    averageSessionLength: 4.2,
-    topQuestions: [
-      { question: 'Comment puis-je réinitialiser mon mot de passe ?', count: 15 },
-      { question: 'Quels sont vos tarifs ?', count: 12 },
-      { question: 'Comment contacter le support ?', count: 8 },
-      { question: 'Où trouver la documentation ?', count: 6 }
-    ],
-    userSatisfaction: 4.3,
-    responseTime: 1.2
+    totalConversations: 0,
+    totalMessages: 0,
+    averageSessionLength: 0,
+    topQuestions: [],
+    userSatisfaction: 0,
+    responseTime: 0
   });
 
   // Initialisation avec message de bienvenue

@@ -220,57 +220,10 @@ export function MailingProvider({ children }: { children: React.ReactNode }) {
     ]);
 
     // Contacts de démonstration
-    setContacts([
-      {
-        id: '1',
-        email: 'john.doe@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        company: 'Acme Corp',
-        tags: ['vip', 'newsletter'],
-        subscribed: true,
-        subscriptionDate: new Date(),
-        customFields: { plan: 'premium', industry: 'tech' }
-      },
-      {
-        id: '2',
-        email: 'jane.smith@example.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        company: 'TechStart',
-        tags: ['newsletter'],
-        subscribed: true,
-        subscriptionDate: new Date(),
-        customFields: { plan: 'basic', industry: 'startup' }
-      }
-    ]);
+    setContacts([]);
 
     // Campagnes de démonstration
-    setCampaigns([
-      {
-        id: '1',
-        name: 'Campagne de bienvenue',
-        subject: 'Bienvenue !',
-        templateId: '1',
-        mailingListIds: ['1'],
-        status: 'sent',
-        sentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        statistics: {
-          sent: 150,
-          delivered: 148,
-          opened: 89,
-          clicked: 23,
-          unsubscribed: 2,
-          bounced: 2,
-          complained: 0,
-          openRate: 60.1,
-          clickRate: 25.8,
-          unsubscribeRate: 1.3
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ]);
+    setCampaigns([]);
   }, []);
 
   // Fonctions SMTP

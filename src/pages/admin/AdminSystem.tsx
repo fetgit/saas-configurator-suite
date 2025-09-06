@@ -74,36 +74,19 @@ const AdminSystem: React.FC = () => {
   
   // Mock data - replace with actual API calls
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
-    uptime: '15 days, 3 hours',
-    cpuUsage: 45,
-    memoryUsage: 67,
-    diskUsage: 34,
-    networkTraffic: 125,
-    activeUsers: 1247,
-    totalRequests: 89542,
-    errorRate: 0.3
+    uptime: '0 days, 0 hours',
+    cpuUsage: 0,
+    memoryUsage: 0,
+    diskUsage: 0,
+    networkTraffic: 0,
+    activeUsers: 0,
+    totalRequests: 0,
+    errorRate: 0
   });
 
-  const [services, setServices] = useState<ServiceStatus[]>([
-    { id: '1', name: 'Web Server', status: 'healthy', uptime: '15d 3h', lastCheck: '2 min ago' },
-    { id: '2', name: 'Database', status: 'healthy', uptime: '15d 3h', lastCheck: '1 min ago' },
-    { id: '3', name: 'Cache Service', status: 'warning', uptime: '12d 1h', lastCheck: '3 min ago' },
-    { id: '4', name: 'Email Service', status: 'healthy', uptime: '15d 3h', lastCheck: '1 min ago' },
-    { id: '5', name: 'File Storage', status: 'error', uptime: '0d 2h', lastCheck: '5 min ago' }
-  ]);
-
-  const [databases, setDatabases] = useState<DatabaseInfo[]>([
-    { name: 'main_db', size: '2.3 GB', tables: 45, connections: 12, lastBackup: '2 hours ago' },
-    { name: 'analytics_db', size: '850 MB', tables: 23, connections: 5, lastBackup: '4 hours ago' },
-    { name: 'logs_db', size: '1.2 GB', tables: 8, connections: 3, lastBackup: '1 hour ago' }
-  ]);
-
-  const [systemLogs, setSystemLogs] = useState<LogEntry[]>([
-    { id: '1', timestamp: '2024-01-20 14:32:15', level: 'info', service: 'Web Server', message: 'Server started successfully' },
-    { id: '2', timestamp: '2024-01-20 14:30:45', level: 'warning', service: 'Cache Service', message: 'High memory usage detected' },
-    { id: '3', timestamp: '2024-01-20 14:28:20', level: 'error', service: 'File Storage', message: 'Connection timeout to storage backend' },
-    { id: '4', timestamp: '2024-01-20 14:25:10', level: 'info', service: 'Database', message: 'Backup completed successfully' }
-  ]);
+  const [services, setServices] = useState<ServiceStatus[]>([]);
+  const [databases, setDatabases] = useState<DatabaseInfo[]>([]);
+  const [systemLogs, setSystemLogs] = useState<LogEntry[]>([]);
 
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [autoBackup, setAutoBackup] = useState(true);

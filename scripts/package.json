@@ -1,0 +1,17 @@
+{
+  "name": "postgres-test-script",
+  "version": "1.0.0",
+  "description": "Script de test de connexion PostgreSQL pour SaaS Configurator Suite",
+  "main": "test-postgres-connection.js",
+  "scripts": {
+    "test": "node test-postgres-connection.js",
+    "install-deps": "npm install pg readline"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.10.9"
+  }
+}

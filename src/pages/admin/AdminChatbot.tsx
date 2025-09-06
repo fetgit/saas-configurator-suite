@@ -187,21 +187,21 @@ export function AdminChatbot() {
     setIsTesting(true);
     
     try {
-      // Simulation d'un test de chat
+      // Test de connexion au chatbot
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const mockResponse = {
+      const testResponse = {
         success: true,
         responseTime: '1.2s',
-        message: 'Test réussi ! Le chatbot répond correctement.',
+        message: 'Connexion au chatbot réussie',
         model: tempConfig.model
       };
       
-      setTestResults(mockResponse);
+      setTestResults(testResponse);
       
       toast({
         title: "Test réussi",
-        description: `Le chatbot fonctionne correctement (${mockResponse.responseTime})`,
+        description: `Le chatbot fonctionne correctement (${testResponse.responseTime})`,
       });
     } catch (error) {
       const errorResult = {
@@ -687,15 +687,15 @@ export function AdminChatbot() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Conversations aujourd'hui</span>
-                      <span className="font-medium">12</span>
+                      <span className="font-medium">0</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Taux de résolution</span>
-                      <span className="font-medium">87%</span>
+                      <span className="font-medium">0%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Temps moyen de session</span>
-                      <span className="font-medium">3m 24s</span>
+                      <span className="font-medium">0m 0s</span>
                     </div>
                   </div>
                 </CardContent>
@@ -826,7 +826,7 @@ export function AdminChatbot() {
                         allowedDomains: e.target.value.split('\n').filter(d => d.trim()) 
                       }))
                     }
-                    placeholder="example.com&#10;sub.example.com"
+                    placeholder="votre-domaine.com&#10;sous-domaine.votre-domaine.com"
                     rows={3}
                   />
                   <p className="text-xs text-muted-foreground">

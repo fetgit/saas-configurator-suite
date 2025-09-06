@@ -90,46 +90,31 @@ export function AdminAnalytics() {
   // Données simulées - dans un vrai projet, ces données viendraient de votre API
   const analyticsData: AnalyticsData = {
     overview: {
-      totalUsers: 2847,
-      activeUsers: 1263,
-      totalConversations: 15420,
-      totalEmails: 89532,
-      userGrowth: 12.5,
-      engagementRate: 67.8
+      totalUsers: 0,
+      activeUsers: 0,
+      totalConversations: 0,
+      totalEmails: 0,
+      userGrowth: 0,
+      engagementRate: 0
     },
     performance: {
-      pageViews: 145230,
-      bounceRate: 32.1,
-      sessionDuration: 4.2,
-      conversionRate: 3.8,
-      serverUptime: 99.9,
-      responseTime: 245
+      pageViews: 0,
+      bounceRate: 0,
+      sessionDuration: 0,
+      conversionRate: 0,
+      serverUptime: 0,
+      responseTime: 0
     },
     traffic: {
-      sources: [
-        { name: 'Recherche organique', value: 45230, percentage: 42.3 },
-        { name: 'Direct', value: 28940, percentage: 27.1 },
-        { name: 'Réseaux sociaux', value: 18650, percentage: 17.4 },
-        { name: 'Référencement', value: 14180, percentage: 13.2 }
-      ],
-      devices: [
-        { name: 'Mobile', value: 56780, percentage: 53.2 },
-        { name: 'Desktop', value: 38920, percentage: 36.4 },
-        { name: 'Tablette', value: 11100, percentage: 10.4 }
-      ],
-      locations: [
-        { country: 'France', sessions: 38450, percentage: 36.0 },
-        { country: 'Canada', sessions: 22180, percentage: 20.8 },
-        { country: 'Belgique', sessions: 15920, percentage: 14.9 },
-        { country: 'Suisse', sessions: 12330, percentage: 11.5 },
-        { country: 'Autres', sessions: 18020, percentage: 16.8 }
-      ]
+      sources: [],
+      devices: [],
+      locations: []
     },
     security: {
-      threats: 23,
-      blockedIps: 156,
-      failedLogins: 89,
-      securityScore: 94.2
+      threats: 0,
+      blockedIps: 0,
+      failedLogins: 0,
+      securityScore: 0
     }
   };
 

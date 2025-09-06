@@ -62,57 +62,7 @@ export const AdminUsers = () => {
   const { toast } = useToast();
 
   // États pour la gestion des utilisateurs
-  const [users, setUsers] = useState<UserData[]>([
-    {
-      id: '1',
-      name: 'Super Admin',
-      email: 'admin@example.com',
-      role: 'superadmin',
-      company: 'SaaS Company',
-      status: 'active',
-      createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: '2024-01-15T10:30:00Z',
-    },
-    {
-      id: '2',
-      name: 'Manager Client',
-      email: 'manager@client.com',
-      role: 'admin',
-      company: 'Client Company',
-      status: 'active',
-      createdAt: '2024-01-05T00:00:00Z',
-      lastLogin: '2024-01-14T14:20:00Z',
-    },
-    {
-      id: '3',
-      name: 'User Client',
-      email: 'user@client.com',
-      role: 'user',
-      company: 'Client Company',
-      status: 'active',
-      createdAt: '2024-01-10T00:00:00Z',
-      lastLogin: '2024-01-13T09:15:00Z',
-    },
-    {
-      id: '4',
-      name: 'John Doe',
-      email: 'john@client.com',
-      role: 'user',
-      company: 'Client Company',
-      status: 'inactive',
-      createdAt: '2024-01-12T00:00:00Z',
-    },
-    {
-      id: '5',
-      name: 'Jane Smith',
-      email: 'jane@otherclient.com',
-      role: 'admin',
-      company: 'Other Client',
-      status: 'active',
-      createdAt: '2024-01-08T00:00:00Z',
-      lastLogin: '2024-01-15T16:45:00Z',
-    },
-  ]);
+  const [users, setUsers] = useState<UserData[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
