@@ -5,15 +5,17 @@
 
 import { DatabaseConfig, ChatbotConfig, SystemConfig, SecurityConfig, MailingConfig, AppearanceConfig, LegalConfig, CommunityConfig, AnalyticsConfig } from './adminConfigService';
 
-// Configuration par défaut de la base de données
+// Configuration par défaut de la base de données - Utilise les secrets sécurisés
+import { secrets } from '@/config/secrets';
+
 export const defaultDatabaseConfig: DatabaseConfig = {
   db_type: 'postgresql',
-  host: '147.93.58.155',
-  port: 5432,
-  database_name: 'saas_configurator',
-  username: 'vpshostinger',
-  password: 'Fethi@2025!',
-  ssl_enabled: false,
+  host: secrets.database.host,
+  port: secrets.database.port,
+  database_name: secrets.database.database,
+  username: secrets.database.username,
+  password: secrets.database.password,
+  ssl_enabled: secrets.database.ssl,
   ssl_verify_cert: true,
   charset: 'UTF8',
   schema_name: 'public',

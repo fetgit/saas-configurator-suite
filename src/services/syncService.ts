@@ -3,14 +3,16 @@
 // Service pour synchroniser les configurations entre localStorage et PostgreSQL
 // ===================================================================
 
-// Configuration de connexion PostgreSQL
+// Configuration de connexion PostgreSQL - Utilise les secrets sécurisés
+import { secrets } from '@/config/secrets';
+
 const POSTGRES_CONFIG = {
-  host: '147.93.58.155',
-  port: 5432,
-  database: 'saas_configurator',
-  user: 'vpshostinger',
-  password: 'Fethi@2025!',
-  ssl: false
+  host: secrets.database.host,
+  port: secrets.database.port,
+  database: secrets.database.database,
+  user: secrets.database.username,
+  password: secrets.database.password,
+  ssl: secrets.database.ssl
 };
 
 // Fonction pour exécuter des requêtes PostgreSQL via une API proxy

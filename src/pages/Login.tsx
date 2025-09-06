@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const Login = () => {
@@ -31,7 +31,7 @@ export const Login = () => {
     setError('');
 
     try {
-      const success = await login(formData.email, formData.password);
+      const success = await login({ email: formData.email, password: formData.password });
       if (success) {
         toast({
           title: "Connexion réussie",
@@ -55,16 +55,6 @@ export const Login = () => {
     }));
   };
 
-  // Comptes de démonstration
-  const demoAccounts = [
-    { email: 'admin@example.com', password: 'password', role: 'Super Admin' },
-    { email: 'manager@client.com', password: 'password', role: 'Admin Client' },
-    { email: 'user@client.com', password: 'password', role: 'Utilisateur' },
-  ];
-
-  const fillDemoAccount = (email: string, password: string) => {
-    setFormData({ email, password });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
@@ -118,6 +108,7 @@ export const Login = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="votre@email.com"
+                  autoComplete="username"
                   required
                   disabled={isLoading}
                 />
@@ -133,6 +124,7 @@ export const Login = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Votre mot de passe"
+                    autoComplete="current-password"
                     required
                     disabled={isLoading}
                   />
@@ -181,38 +173,6 @@ export const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Accounts */}
-        <Card className="shadow-medium border-0">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Comptes de démonstration
-            </CardTitle>
-            <CardDescription>
-              Cliquez pour tester les différents niveaux d'accès
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {demoAccounts.map((account, index) => (
-              <div 
-                key={index}
-                className="flex items-center justify-between p-3 bg-muted rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">{account.role}</div>
-                  <div className="text-xs text-muted-foreground">{account.email}</div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemoAccount(account.email, account.password)}
-                >
-                  Utiliser
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -1,120 +1,83 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AuthService, type User, type LoginCredentials, type RegisterData } from '@/services/authService';
 
 // Types d'utilisateur
 export type UserRole = 'user' | 'admin' | 'superadmin';
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  company?: string;
-  createdAt: string;
-  lastLogin?: string;
-}
-
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  register: (email: string, password: string, name: string, company?: string) => Promise<boolean>;
+  login: (credentials: LoginCredentials) => Promise<boolean>;
+  logout: () => Promise<void>;
+  register: (data: RegisterData) => Promise<boolean>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Chargement de l'utilisateur depuis le localStorage au démarrage
+  // Chargement de l'utilisateur depuis le service d'authentification au démarrage
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const loadUser = async () => {
       try {
-        setUser(JSON.parse(savedUser));
+        const isAuth = await AuthService.isAuthenticated();
+        if (isAuth) {
+          const currentUser = await AuthService.getCurrentUser();
+          setUser(currentUser);
+        }
       } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('user');
+        console.error('Error loading user:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    loadUser();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (credentials: LoginCredentials): Promise<boolean> => {
     try {
-      // Simulation d'une connexion (à remplacer par votre API)
-      // Pour le développement, on simule quelques utilisateurs
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          email: 'admin@example.com',
-          name: 'Admin User',
-          role: 'superadmin',
-          company: 'SaaS Company',
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          email: 'manager@client.com',
-          name: 'Manager Client',
-          role: 'admin',
-          company: 'Client Company',
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          email: 'user@client.com',
-          name: 'Regular User',
-          role: 'user',
-          company: 'Client Company',
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-        },
-      ];
-
-      const foundUser = mockUsers.find(u => u.email === email);
-      if (foundUser && password === 'password') {
-        const updatedUser = { ...foundUser, lastLogin: new Date().toISOString() };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        return true;
-      }
-
-      return false;
+      setLoading(true);
+      const response = await AuthService.login(credentials);
+      setUser(response.user);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string, company?: string): Promise<boolean> => {
+  const register = async (data: RegisterData): Promise<boolean> => {
     try {
-      // Simulation d'une inscription (à remplacer par votre API)
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
-        name,
-        role: 'user',
-        company,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
+      setLoading(true);
+      const response = await AuthService.register(data);
+      setUser(response.user);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      setLoading(true);
+      await AuthService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isAuthenticated = !!user;
@@ -130,7 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register, 
         isAuthenticated, 
         isAdmin, 
-        isSuperAdmin 
+        isSuperAdmin,
+        loading
       }}
     >
       {children}

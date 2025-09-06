@@ -17,29 +17,20 @@ import {
   initializeDefaultConfigs 
 } from './defaultConfigs';
 
-// Configuration de connexion PostgreSQL
+// Configuration de connexion PostgreSQL - Utilise les secrets sécurisés
+import { secrets } from '@/config/secrets';
+
 const POSTGRES_CONFIG = {
-  host: '147.93.58.155',
-  port: 5432,
-  database: 'saas_configurator',
-  user: 'vpshostinger',
-  password: 'Fethi@2025!',
-  ssl: false
+  host: secrets.database.host,
+  port: secrets.database.port,
+  database: secrets.database.database,
+  user: secrets.database.username,
+  password: secrets.database.password,
+  ssl: secrets.database.ssl
 };
 
-// Fonction utilitaire pour chiffrer les données sensibles
-const encryptSensitiveData = (data: string): string => {
-  return btoa(data);
-};
-
-// Fonction utilitaire pour déchiffrer les données sensibles
-const decryptSensitiveData = (encryptedData: string): string => {
-  try {
-    return atob(encryptedData);
-  } catch {
-    return encryptedData;
-  }
-};
+// Import du service de chiffrement sécurisé
+import { encryptSensitiveData, decryptSensitiveData } from './encryptionService';
 
 // Fonction pour exécuter des requêtes PostgreSQL via une API proxy
 const executeQuery = async (query: string, params: any[] = []): Promise<any> => {
