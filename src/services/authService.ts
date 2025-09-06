@@ -5,6 +5,7 @@
 
 import { secrets } from '@/config/secrets';
 import { EncryptionService } from './encryptionService';
+import { TwoFactorService, TwoFactorConfig } from './twoFactorService';
 
 // Interface pour les tokens JWT
 export interface JWTPayload {
@@ -40,6 +41,8 @@ export interface LoginCredentials {
   password: string;
   rememberMe?: boolean;
   mfaCode?: string;
+  twoFactorCode?: string;
+  backupCode?: string;
 }
 
 // Interface pour l'inscription
@@ -215,7 +218,9 @@ export class AuthService {
           emailVerified: true,
           mfaEnabled: false,
           status: 'active',
-          password: 'AdminHeleam2025!'
+          password: 'AdminHeleam2025!',
+          twoFactorEnabled: false,
+          twoFactorSecret: null
         },
         {
           id: '8bf3c397-b5dd-4d86-983c-5b736084dccc',
@@ -228,7 +233,9 @@ export class AuthService {
           emailVerified: true,
           mfaEnabled: false,
           status: 'active',
-          password: 'AdminUser2025!'
+          password: 'AdminUser2025!',
+          twoFactorEnabled: false,
+          twoFactorSecret: null
         },
         {
           id: '700f7654-8c8b-4595-914e-ac9f8ea583ac',
@@ -241,7 +248,9 @@ export class AuthService {
           emailVerified: true,
           mfaEnabled: false,
           status: 'active',
-          password: 'UserHeleam2025!'
+          password: 'UserHeleam2025!',
+          twoFactorEnabled: false,
+          twoFactorSecret: null
         }
       ];
 
@@ -493,6 +502,95 @@ export class AuthService {
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'utilisateur actuel:', error);
       return null;
+    }
+  }
+
+  // Activer la 2FA pour un utilisateur
+  static async enableTwoFactor(userId: string, config: TwoFactorConfig): Promise<boolean> {
+    try {
+      // En production, ceci sera sauvegardé en base de données
+      console.log('2FA activée pour l\'utilisateur:', userId);
+      console.log('Secret:', config.secret);
+      console.log('Codes de récupération:', config.backupCodes);
+      
+      // Simulation de la sauvegarde
+      localStorage.setItem(`twoFactor_${userId}`, JSON.stringify({
+        secret: config.secret,
+        backupCodes: config.backupCodes,
+        enabled: true,
+        activatedAt: new Date().toISOString()
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de l\'activation de la 2FA:', error);
+      return false;
+    }
+  }
+
+  // Désactiver la 2FA pour un utilisateur
+  static async disableTwoFactor(userId: string): Promise<boolean> {
+    try {
+      // En production, ceci sera mis à jour en base de données
+      localStorage.removeItem(`twoFactor_${userId}`);
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la désactivation de la 2FA:', error);
+      return false;
+    }
+  }
+
+  // Vérifier si la 2FA est activée pour un utilisateur
+  static isTwoFactorEnabled(userId: string): boolean {
+    try {
+      const twoFactorData = localStorage.getItem(`twoFactor_${userId}`);
+      if (!twoFactorData) return false;
+      
+      const data = JSON.parse(twoFactorData);
+      return data.enabled === true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Vérifier un code 2FA
+  static async verifyTwoFactorCode(userId: string, code: string): Promise<boolean> {
+    try {
+      const twoFactorData = localStorage.getItem(`twoFactor_${userId}`);
+      if (!twoFactorData) return false;
+      
+      const data = JSON.parse(twoFactorData);
+      return TwoFactorService.verifyTotpCode(data.secret, code);
+    } catch (error) {
+      console.error('Erreur lors de la vérification du code 2FA:', error);
+      return false;
+    }
+  }
+
+  // Vérifier un code de récupération
+  static async verifyBackupCode(userId: string, code: string): Promise<boolean> {
+    try {
+      const twoFactorData = localStorage.getItem(`twoFactor_${userId}`);
+      if (!twoFactorData) return false;
+      
+      const data = JSON.parse(twoFactorData);
+      const backupCodes = {
+        codes: data.backupCodes,
+        used: data.usedBackupCodes || []
+      };
+      
+      const result = TwoFactorService.verifyBackupCode(backupCodes, code);
+      
+      if (result.isValid && result.backupCodeUsed) {
+        // Marquer le code comme utilisé
+        data.usedBackupCodes = backupCodes.used;
+        localStorage.setItem(`twoFactor_${userId}`, JSON.stringify(data));
+      }
+      
+      return result.isValid;
+    } catch (error) {
+      console.error('Erreur lors de la vérification du code de récupération:', error);
+      return false;
     }
   }
 }

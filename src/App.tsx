@@ -29,6 +29,7 @@ import { AdminChatbot } from "./pages/admin/AdminChatbot";
 import { AdminAnalytics } from "./pages/admin/AdminAnalytics";
 import { AdminCompanies } from "./pages/admin/AdminCompanies";
 import { AdminSecurity } from "./pages/admin/AdminSecurity";
+import { AdminSecurityHeaders } from "./pages/admin/AdminSecurityHeaders";
 import AdminSystem from "./pages/admin/AdminSystem";
 import { MediaShowcase } from "./pages/MediaShowcase";
 import { CommunityDashboard } from "./pages/community/CommunityDashboard";
@@ -79,6 +80,7 @@ const App = () => (
                       <Route path="/admin/analytics" element={<AdminAnalytics />} />
                       <Route path="/admin/companies" element={<AdminCompanies />} />
                       <Route path="/admin/security" element={<AdminSecurity />} />
+                      <Route path="/admin/security-headers" element={<AdminSecurityHeaders />} />
                       <Route path="/admin/system" element={<AdminSystem />} />
                       
                       {/* Page de démonstration des médias */}

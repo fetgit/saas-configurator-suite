@@ -20,22 +20,57 @@ const PORT = process.env.PORT || 3001;
 // CONFIGURATION DE SÉCURITÉ
 // ===================================================================
 
-// Headers de sécurité avec Helmet
+// Headers de sécurité avancés avec Helmet
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "https://api.example.com"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      childSrc: ["'self'"],
+      frameSrc: ["'self'"],
+      workerSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      upgradeInsecureRequests: [],
+      blockAllMixedContent: [],
     },
+    reportOnly: false,
   },
-  crossOriginEmbedderPolicy: false
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  xFrameOptions: { action: 'deny' },
+  xContentTypeOptions: true,
+  xXssProtection: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  permissionsPolicy: {
+    camera: [],
+    microphone: [],
+    geolocation: [],
+    payment: [],
+    usb: [],
+    accelerometer: [],
+    gyroscope: [],
+    magnetometer: [],
+    ambientLightSensor: [],
+    autoplay: ["'self'"],
+    encryptedMedia: ["'self'"],
+    fullscreen: ["'self'"],
+    pictureInPicture: ["'self'"]
+  },
+  crossOriginEmbedderPolicy: { policy: 'require-corp' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-origin' }
 }));
 
 // CORS sécurisé
@@ -60,7 +95,7 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Rate limiting strict pour l'authentification
+// Rate limiting avancé pour l'authentification
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 tentatives par IP
@@ -68,10 +103,57 @@ const authLimiter = rateLimit({
     error: 'Trop de tentatives de connexion, veuillez réessayer dans 15 minutes.',
     retryAfter: 900
   },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    // Utiliser l'IP et l'email pour une protection plus granulaire
+    const email = req.body?.email || 'unknown';
+    return `${req.ip}:${email}`;
+  }
+});
+
+// Rate limiting pour les tentatives rapides
+const rapidLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Limite à 10 tentatives par IP
+  message: {
+    error: 'Trop de tentatives rapides, ralentissez',
+    retryAfter: 300
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting pour les emails spécifiques
+const emailLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 3, // Limite à 3 tentatives par email
+  message: {
+    error: 'Trop de tentatives pour cet email, réessayez dans 10 minutes',
+    retryAfter: 600
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.body?.email || req.ip;
+  }
+});
+
+// Rate limiting pour les patterns suspects
+const suspiciousLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  max: 20, // Limite à 20 tentatives par IP
+  message: {
+    error: 'Activité suspecte détectée, accès temporairement bloqué',
+    retryAfter: 3600
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 app.use('/api/auth/', authLimiter);
+app.use('/api/auth/login', emailLimiter);
+app.use('/api/auth/', rapidLimiter);
+app.use('/api/', suspiciousLimiter);
 
 // Middleware pour parser le JSON
 app.use(express.json({ limit: '10mb' }));
