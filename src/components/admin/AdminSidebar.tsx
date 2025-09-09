@@ -26,7 +26,8 @@ import {
   Scale,
   Mail,
   MessageCircle,
-  UserCheck
+  UserCheck,
+  Zap
 } from 'lucide-react';
 
 export function AdminSidebar() {
@@ -48,6 +49,7 @@ export function AdminSidebar() {
     { title: 'Mailing', url: '/admin/mailing', icon: Mail },
     { title: 'Chatbot IA', url: '/admin/chatbot', icon: MessageCircle },
     { title: 'Statistiques', url: '/admin/analytics', icon: BarChart3 },
+    { title: 'Performances', url: '/admin/performance', icon: Zap },
   ];
 
   const superAdminItems = [
@@ -55,6 +57,9 @@ export function AdminSidebar() {
     { title: t('admin.database'), url: '/admin/database', icon: Database },
     { title: t('admin.appearance'), url: '/admin/appearance', icon: Palette },
     { title: 'Sécurité globale', url: '/admin/security', icon: Shield },
+    { title: 'Sécurité intégrée', url: '/admin/security-integrated', icon: Shield },
+    { title: 'Headers de sécurité', url: '/admin/security-headers', icon: Shield },
+    { title: 'Système', url: '/admin/system', icon: Settings },
     { title: 'Mentions légales', url: '/admin/legal', icon: Scale },
   ];
 

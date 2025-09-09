@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatbot } from '@/contexts/ChatbotContext';
-import { useTheme } from 'next-themes';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -41,7 +41,8 @@ export function Chatbot() {
     isLoading 
   } = useChatbot();
   
-  const { theme } = useTheme();
+  const { config: appearanceConfig } = useAppearance();
+  const theme = appearanceConfig.layout.theme;
   const [inputValue, setInputValue] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 20, y: 20 });

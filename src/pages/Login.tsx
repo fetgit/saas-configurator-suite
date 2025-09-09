@@ -8,8 +8,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, AlertCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { clearAllAuth, debugAuthState } from '@/utils/clearAuth';
+import { forceLogout, debugAllTokens } from '@/utils/forceLogout';
 
 export const Login = () => {
   const { t } = useLanguage();
@@ -168,6 +170,66 @@ export const Login = () => {
                 <Link to="/register" className="text-sm text-primary hover:underline">
                   {t('nav.register')}
                 </Link>
+              </div>
+
+              {/* Boutons de debug - à supprimer en production */}
+              <div className="mt-4 pt-4 border-t border-dashed border-muted">
+                <div className="text-xs text-muted-foreground mb-2">Debug (dev only):</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      debugAuthState();
+                      toast({
+                        title: "Debug",
+                        description: "État auth affiché dans la console",
+                      });
+                    }}
+                  >
+                    🔍 Debug Auth
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      debugAllTokens();
+                      toast({
+                        title: "Debug",
+                        description: "Tous les tokens affichés dans la console",
+                      });
+                    }}
+                  >
+                    🔍 All Tokens
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      clearAllAuth();
+                      toast({
+                        title: "Nettoyage",
+                        description: "Authentification nettoyée",
+                      });
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Clear Auth
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      forceLogout();
+                    }}
+                  >
+                    🚨 Force Logout
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>

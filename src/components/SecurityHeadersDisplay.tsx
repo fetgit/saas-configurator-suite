@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SecurityHeadersService, SecurityHeadersConfig } from '@/services/securityHeadersService';
-import { Shield, CheckCircle, AlertTriangle, Info, Copy, RefreshCw } from 'lucide-react';
+import { securityHeadersApiService, type SecurityHeadersConfig, type GeneratedHeaders } from '@/services/securityHeadersApiService';
+import { Shield, CheckCircle, AlertTriangle, Info, Copy, RefreshCw, Loader2 } from 'lucide-react';
 
 interface SecurityHeadersDisplayProps {
   environment?: 'development' | 'production';
@@ -16,33 +16,54 @@ export const SecurityHeadersDisplay: React.FC<SecurityHeadersDisplayProps> = ({
   environment = 'development',
   onHeadersGenerated
 }) => {
-  const [config, setConfig] = useState<SecurityHeadersConfig>({});
+  const [config, setConfig] = useState<SecurityHeadersConfig | null>(null);
   const [headers, setHeaders] = useState<{ [key: string]: string }>({});
   const [validation, setValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: true, errors: [] });
   const [stats, setStats] = useState<any>({});
   const [copied, setCopied] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Charger la configuration
+  // Charger la configuration depuis l'API
   useEffect(() => {
-    const securityConfig = SecurityHeadersService.getConfig(environment);
-    setConfig(securityConfig);
-    
-    const generatedHeaders = SecurityHeadersService.generateAllHeaders(securityConfig);
-    setHeaders(generatedHeaders);
-    
-    const validationResult = SecurityHeadersService.validateConfig(securityConfig);
-    setValidation(validationResult);
-    
-    const securityStats = SecurityHeadersService.getSecurityStats(securityConfig);
-    setStats(securityStats);
+    const loadSecurityHeaders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    if (onHeadersGenerated) {
-      onHeadersGenerated(generatedHeaders);
-    }
-  }, [environment, onHeadersGenerated]);
+        // Récupérer la configuration depuis l'API
+        const securityConfig = await securityHeadersApiService.getConfig(environment);
+        setConfig(securityConfig);
+        
+        // Générer les headers depuis l'API
+        const generatedData = await securityHeadersApiService.generateHeaders(environment);
+        setHeaders(generatedData.headers);
+        
+        // Valider la configuration
+        const validationResult = securityHeadersApiService.validateConfig(securityConfig);
+        setValidation(validationResult);
+        
+        // Calculer les statistiques
+        const securityStats = securityHeadersApiService.calculateSecurityStats(securityConfig);
+        setStats(securityStats);
+
+        // Appeler le callback si fourni
+        if (onHeadersGenerated) {
+          onHeadersGenerated(generatedData.headers);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des Security Headers:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSecurityHeaders();
+  }, [environment]); // Retirer onHeadersGenerated des dépendances pour éviter la boucle infinie
 
   // Copier un header dans le presse-papiers
-  const copyToClipboard = async (text: string, headerName: string) => {
+  const copyToClipboard = useCallback(async (text: string, headerName: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(headerName);
@@ -50,7 +71,7 @@ export const SecurityHeadersDisplay: React.FC<SecurityHeadersDisplayProps> = ({
     } catch (error) {
       console.error('Erreur lors de la copie:', error);
     }
-  };
+  }, []);
 
   // Obtenir la couleur du badge selon le niveau de sécurité
   const getSecurityLevelColor = (level: string) => {
@@ -73,6 +94,40 @@ export const SecurityHeadersDisplay: React.FC<SecurityHeadersDisplayProps> = ({
       default: return <Info className="h-4 w-4" />;
     }
   };
+
+  // Afficher le loading
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Chargement des Security Headers...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher l'erreur
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <div className="font-semibold mb-2">Erreur lors du chargement :</div>
+          <p>{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Réessayer
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">

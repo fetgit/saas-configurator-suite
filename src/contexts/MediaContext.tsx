@@ -130,11 +130,17 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+    // Éviter de sauvegarder les données initiales pour prévenir les re-rendus inutiles
+    if (mediaLibrary.length > 0 && mediaLibrary[0].id === '1') {
+      localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+    }
   }, [mediaLibrary]);
 
   useEffect(() => {
-    localStorage.setItem('carousels', JSON.stringify(carousels));
+    // Éviter de sauvegarder les données initiales pour prévenir les re-rendus inutiles
+    if (carousels.length > 0 && carousels[0].id === '1') {
+      localStorage.setItem('carousels', JSON.stringify(carousels));
+    }
   }, [carousels]);
 
   return (

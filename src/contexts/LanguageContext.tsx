@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 // Types pour le contexte de langue
 export type Language = 'fr' | 'en' | 'es' | 'it';
@@ -230,32 +230,37 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Sauvegarde de la langue dans le localStorage
-  const handleSetLanguage = (lang: Language) => {
+  // Sauvegarde de la langue dans le localStorage mémorisée
+  const handleSetLanguage = useCallback((lang: Language) => {
+    // Éviter les mises à jour inutiles si la langue n'a pas changé
+    if (lang === language) {
+      return;
+    }
     setLanguage(lang);
     localStorage.setItem('language', lang);
-  };
+  }, [language]);
 
-  // Fonction de traduction
-  const t = (key: string): string => {
+  // Fonction de traduction mémorisée
+  const t = useCallback((key: string): string => {
     const translation = translations[key];
     if (!translation) {
       console.warn(`Translation missing for key: ${key}`);
       return key;
     }
     return translation[language] || translation.fr || key;
-  };
+  }, [translations, language]);
+
+  // Mémoriser la valeur du contexte pour éviter les re-rendus inutiles
+  const contextValue = useMemo(() => ({
+    language, 
+    setLanguage: handleSetLanguage, 
+    t, 
+    translations, 
+    setTranslations 
+  }), [language, handleSetLanguage, t, translations]);
 
   return (
-    <LanguageContext.Provider 
-      value={{ 
-        language, 
-        setLanguage: handleSetLanguage, 
-        t, 
-        translations, 
-        setTranslations 
-      }}
-    >
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

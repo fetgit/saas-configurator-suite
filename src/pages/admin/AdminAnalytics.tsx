@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,293 +28,329 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { 
-  BarChart3, 
   Users, 
-  MessageCircle, 
-  Mail,
-  TrendingUp,
-  TrendingDown,
+  TrendingUp, 
+  Eye, 
+  MousePointer, 
+  Clock, 
+  Server, 
+  Shield, 
+  Globe, 
+  Smartphone, 
+  Monitor, 
+  Tablet,
   Download,
   RefreshCw,
-  Calendar,
-  Eye,
-  Clock,
-  Target,
-  Zap,
-  Globe,
-  Shield,
-  Activity,
-  AlertCircle,
-  CheckCircle
+  Loader2,
+  BarChart3,
+  PieChart,
+  Activity
 } from 'lucide-react';
+import { adminAnalyticsService, type AnalyticsData } from '@/services/adminAnalyticsService';
 
-// Types pour les données analytiques
-interface AnalyticsData {
-  overview: {
-    totalUsers: number;
-    activeUsers: number;
-    totalConversations: number;
-    totalEmails: number;
-    userGrowth: number;
-    engagementRate: number;
-  };
-  performance: {
-    pageViews: number;
-    bounceRate: number;
-    sessionDuration: number;
-    conversionRate: number;
-    serverUptime: number;
-    responseTime: number;
-  };
-  traffic: {
-    sources: Array<{ name: string; value: number; percentage: number }>;
-    devices: Array<{ name: string; value: number; percentage: number }>;
-    locations: Array<{ country: string; sessions: number; percentage: number }>;
-  };
-  security: {
-    threats: number;
-    blockedIps: number;
-    failedLogins: number;
-    securityScore: number;
-  };
-}
-
-export function AdminAnalytics() {
-  const { user, isSuperAdmin } = useAuth();
+export const AdminAnalytics: React.FC = () => {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  
+  // États
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
-  const [timeRange, setTimeRange] = useState('7d');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Données simulées - dans un vrai projet, ces données viendraient de votre API
-  const analyticsData: AnalyticsData = {
-    overview: {
-      totalUsers: 0,
-      activeUsers: 0,
-      totalConversations: 0,
-      totalEmails: 0,
-      userGrowth: 0,
-      engagementRate: 0
-    },
-    performance: {
-      pageViews: 0,
-      bounceRate: 0,
-      sessionDuration: 0,
-      conversionRate: 0,
-      serverUptime: 0,
-      responseTime: 0
-    },
-    traffic: {
-      sources: [],
-      devices: [],
-      locations: []
-    },
-    security: {
-      threats: 0,
-      blockedIps: 0,
-      failedLogins: 0,
-      securityScore: 0
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    
+  // Charger les données analytiques
+  const loadAnalytics = async () => {
     try {
-      // Simulation de rechargement des données
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      setLoading(true);
+      setError(null);
       
+      const data = await adminAnalyticsService.getAnalytics(selectedPeriod);
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Erreur lors du chargement des analytics:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast({
-        title: "Données actualisées",
-        description: "Les statistiques ont été mises à jour.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur de mise à jour",
-        description: "Impossible de recharger les données.",
+        title: "Erreur",
+        description: "Impossible de charger les données analytiques",
         variant: "destructive",
       });
     } finally {
-      setIsRefreshing(false);
+      setLoading(false);
     }
   };
 
-  const handleExportReport = async () => {
+  // Charger les données au montage et lors du changement de période
+  useEffect(() => {
+    loadAnalytics();
+  }, [selectedPeriod]);
+
+  // Exporter les données
+  const handleExport = async (format: 'json' | 'csv') => {
     try {
-      const reportData = {
-        timeRange,
-        generatedAt: new Date().toISOString(),
-        company: user?.company || 'Global',
-        data: analyticsData,
-        summary: {
-          totalMetrics: Object.keys(analyticsData.overview).length,
-          performanceScore: analyticsData.performance.serverUptime,
-          securityStatus: analyticsData.security.securityScore > 90 ? 'Excellent' : 'Bon'
-        }
-      };
-      
-      const jsonData = JSON.stringify(reportData, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+      const blob = await adminAnalyticsService.exportAnalytics(selectedPeriod, format);
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `analytics-${selectedPeriod}.${format}`;
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       
       toast({
-        title: "Rapport exporté",
-        description: "Le rapport d'analyse a été téléchargé.",
+        title: "Succès",
+        description: `Données exportées en ${format.toUpperCase()}`,
       });
-    } catch (error) {
+    } catch (err) {
+      console.error('Erreur lors de l\'export:', err);
       toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter le rapport.",
+        title: "Erreur",
+        description: "Impossible d'exporter les données",
         variant: "destructive",
       });
     }
   };
 
-  const getGrowthBadge = (value: number) => {
-    return value >= 0 ? (
-      <Badge variant="default" className="bg-success text-success-foreground">
-        <TrendingUp className="h-3 w-3 mr-1" />
-        +{value}%
-      </Badge>
-    ) : (
-      <Badge variant="destructive">
-        <TrendingDown className="h-3 w-3 mr-1" />
-        {value}%
-      </Badge>
-    );
+  // Formater les nombres
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    } else {
+      return num.toString();
+    }
   };
 
-  const getStatusBadge = (score: number) => {
-    if (score >= 95) return <Badge className="bg-success text-success-foreground">Excellent</Badge>;
-    if (score >= 80) return <Badge variant="default">Bon</Badge>;
-    if (score >= 60) return <Badge variant="secondary">Moyen</Badge>;
-    return <Badge variant="destructive">Faible</Badge>;
+  // Obtenir la couleur du badge
+  const getBadgeColor = (value: number, thresholds: { good: number; warning: number }): string => {
+    if (value >= thresholds.good) {
+      return 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400';
+    } else if (value >= thresholds.warning) {
+      return 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400';
+    } else {
+      return 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400';
+    }
   };
+
+  if (loading && !analytics) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center p-8">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Chargement des analytics...</span>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-8">
+          <p className="text-red-500 mb-4">{error || 'Erreur inconnue'}</p>
+          <Button onClick={loadAnalytics} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Réessayer
+          </Button>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-8 w-8" />
-              Statistiques & Analytics
-            </h1>
-            <p className="text-muted-foreground">
-              {isSuperAdmin 
-                ? 'Vue d\'ensemble de toutes les métriques de la plateforme'
-                : `Statistiques pour ${user?.company}`
-              }
-            </p>
+      <div className="max-w-7xl mx-auto">
+        {/* En-tête */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Analytics</h1>
+              <p className="text-muted-foreground">
+                Analysez les performances et l'utilisation de votre application
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={selectedPeriod} onValueChange={(value: '7d' | '30d' | '90d') => setSelectedPeriod(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">7 jours</SelectItem>
+                  <SelectItem value="30d">30 jours</SelectItem>
+                  <SelectItem value="90d">90 jours</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadAnalytics}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Actualiser
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('json')}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                JSON
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('csv')}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* Métriques principales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Utilisateurs Totaux</p>
+                  <p className="text-2xl font-bold">{formatNumber(analytics.overview.totalUsers)}</p>
+                  <p className="text-xs text-green-500">+{analytics.overview.userGrowth}%</p>
+                </div>
+                <Users className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
           
-          <div className="flex items-center gap-2">
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-48">
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-background border shadow-lg">
-                <SelectItem value="24h">Dernières 24h</SelectItem>
-                <SelectItem value="7d">7 derniers jours</SelectItem>
-                <SelectItem value="30d">30 derniers jours</SelectItem>
-                <SelectItem value="3m">3 derniers mois</SelectItem>
-                <SelectItem value="1y">Dernière année</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
-            
-            <Button onClick={handleExportReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exporter
-            </Button>
-          </div>
-        </div>
-
-        {/* Vue d'ensemble */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Utilisateurs totaux</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analyticsData.overview.totalUsers.toLocaleString()}</div>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-muted-foreground">
-                  {analyticsData.overview.activeUsers.toLocaleString()} actifs
-                </p>
-                {getGrowthBadge(analyticsData.overview.userGrowth)}
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Utilisateurs Actifs</p>
+                  <p className="text-2xl font-bold">{formatNumber(analytics.overview.activeUsers)}</p>
+                  <p className="text-xs text-muted-foreground">Cette période</p>
+                </div>
+                <Activity className="h-8 w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
-
+          
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversations IA</CardTitle>
-              <MessageCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analyticsData.overview.totalConversations.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Taux d'engagement: {analyticsData.overview.engagementRate}%
-              </p>
-              <Progress value={analyticsData.overview.engagementRate} className="mt-2 h-2" />
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pages Vues</p>
+                  <p className="text-2xl font-bold">{formatNumber(analytics.performance.pageViews)}</p>
+                  <Badge className={getBadgeColor(analytics.performance.bounceRate, { good: 30, warning: 50 })}>
+                    {analytics.performance.bounceRate}% rebond
+                  </Badge>
+                </div>
+                <Eye className="h-8 w-8 text-purple-500" />
+              </div>
             </CardContent>
           </Card>
-
+          
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emails envoyés</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analyticsData.overview.totalEmails.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Performance mailing
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Score de sécurité</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analyticsData.security.securityScore}%</div>
-              <div className="flex items-center gap-2 mt-1">
-                {getStatusBadge(analyticsData.security.securityScore)}
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Temps de Réponse</p>
+                  <p className="text-2xl font-bold">{analytics.performance.responseTime}ms</p>
+                  <Badge className={getBadgeColor(analytics.performance.responseTime, { good: 100, warning: 200 })}>
+                    {analytics.performance.serverUptime}% uptime
+                  </Badge>
+                </div>
+                <Server className="h-8 w-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Interface à onglets */}
-        <Tabs defaultValue="performance" className="w-full">
+        {/* Onglets */}
+        <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="traffic">Trafic</TabsTrigger>
             <TabsTrigger value="security">Sécurité</TabsTrigger>
-            <TabsTrigger value="reports">Rapports</TabsTrigger>
           </TabsList>
+
+          {/* Vue d'ensemble */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Utilisateurs */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Utilisateurs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Nouveaux utilisateurs</span>
+                    <span className="font-medium">{formatNumber(analytics.overview.newUsers)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Croissance</span>
+                    <Badge className="bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400">
+                      +{analytics.overview.userGrowth}%
+                    </Badge>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Répartition par rôle</span>
+                    </div>
+                    {analytics.charts.roleDistribution.map((role, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm capitalize">{role.role}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress 
+                            value={(role.count / analytics.overview.totalUsers) * 100} 
+                            className="w-20 h-2" 
+                          />
+                          <span className="text-sm font-medium">{role.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Entreprises */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Entreprises
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {analytics.charts.companyDistribution.slice(0, 5).map((company, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm">{company.company}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress 
+                            value={(company.count / Math.max(...analytics.charts.companyDistribution.map(c => c.count))) * 100} 
+                            className="w-20 h-2" 
+                          />
+                          <span className="text-sm font-medium">{company.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Performance */}
           <TabsContent value="performance" className="space-y-6">
@@ -322,41 +358,32 @@ export function AdminAnalytics() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
-                    Métriques de performance
+                    <BarChart3 className="h-5 w-5" />
+                    Métriques de Performance
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Pages vues</span>
-                    </div>
-                    <span className="font-semibold">{analyticsData.performance.pageViews.toLocaleString()}</span>
+                    <span className="text-sm">Durée de session</span>
+                    <span className="font-medium">{analytics.performance.sessionDuration}s</span>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Taux de rebond</span>
-                    </div>
-                    <span className="font-semibold">{analyticsData.performance.bounceRate}%</span>
+                    <span className="text-sm">Taux de conversion</span>
+                    <Badge className={getBadgeColor(analytics.performance.conversionRate, { good: 3, warning: 1 })}>
+                      {analytics.performance.conversionRate}%
+                    </Badge>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Durée de session</span>
-                    </div>
-                    <span className="font-semibold">{analyticsData.performance.sessionDuration}min</span>
+                    <span className="text-sm">Temps de réponse</span>
+                    <Badge className={getBadgeColor(analytics.performance.responseTime, { good: 100, warning: 200 })}>
+                      {analytics.performance.responseTime}ms
+                    </Badge>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Taux de conversion</span>
-                    </div>
-                    <span className="font-semibold">{analyticsData.performance.conversionRate}%</span>
+                    <span className="text-sm">Uptime serveur</span>
+                    <Badge className="bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400">
+                      {analytics.performance.serverUptime}%
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -364,32 +391,18 @@ export function AdminAnalytics() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    Performance technique
+                    <TrendingUp className="h-5 w-5" />
+                    Tendances
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm">Disponibilité serveur</span>
-                      <span className="font-semibold">{analyticsData.performance.serverUptime}%</span>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center py-8">
+                      <PieChart className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Graphiques de tendances disponibles avec des données réelles
+                      </p>
                     </div>
-                    <Progress value={analyticsData.performance.serverUptime} className="h-2" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm">Temps de réponse</span>
-                      <span className="font-semibold">{analyticsData.performance.responseTime}ms</span>
-                    </div>
-                    <Progress value={analyticsData.performance.responseTime / 10} className="h-2" />
-                  </div>
-
-                  <Separator />
-                  
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    <span className="text-sm text-success">Système opérationnel</span>
                   </div>
                 </CardContent>
               </Card>
@@ -399,64 +412,73 @@ export function AdminAnalytics() {
           {/* Trafic */}
           <TabsContent value="traffic" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sources de trafic</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analyticsData.traffic.sources.map((source, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-primary" style={{
-                            backgroundColor: `hsl(${index * 90}, 70%, 50%)`
-                          }}></div>
-                          <span className="text-sm">{source.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold">{source.value.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">{source.percentage}%</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Appareils</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analyticsData.traffic.devices.map((device, index) => (
-                      <div key={index} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">{device.name}</span>
-                          <span className="font-semibold">{device.percentage}%</span>
-                        </div>
-                        <Progress value={device.percentage} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
+              {/* Sources de trafic */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5" />
-                    Localisation géographique
+                    Sources de Trafic
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {analyticsData.traffic.locations.map((location, index) => (
+                    {analytics.traffic.sources.map((source, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm">{source.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={source.percentage} className="w-16 h-2" />
+                          <span className="text-sm font-medium">{source.percentage}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Appareils */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    Appareils
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analytics.traffic.devices.map((device, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {device.name === 'Desktop' && <Monitor className="h-4 w-4" />}
+                          {device.name === 'Mobile' && <Smartphone className="h-4 w-4" />}
+                          {device.name === 'Tablet' && <Tablet className="h-4 w-4" />}
+                          <span className="text-sm">{device.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={device.percentage} className="w-16 h-2" />
+                          <span className="text-sm font-medium">{device.percentage}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Localisation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Localisation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analytics.traffic.locations.map((location, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <span className="text-sm">{location.country}</span>
-                        <div className="text-right">
-                          <div className="font-semibold">{location.sessions.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">{location.percentage}%</div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={location.percentage} className="w-16 h-2" />
+                          <span className="text-sm font-medium">{location.percentage}%</span>
                         </div>
                       </div>
                     ))}
@@ -473,133 +495,53 @@ export function AdminAnalytics() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    État de la sécurité
+                    Métriques de Sécurité
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                      <span className="text-sm">Menaces détectées</span>
-                    </div>
-                    <Badge variant="destructive">{analyticsData.security.threats}</Badge>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Score de sécurité</span>
+                    <Badge className={getBadgeColor(analytics.security.securityScore, { good: 90, warning: 70 })}>
+                      {analytics.security.securityScore}/100
+                    </Badge>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-warning/10 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-warning" />
-                      <span className="text-sm">IPs bloquées</span>
-                    </div>
-                    <Badge variant="secondary">{analyticsData.security.blockedIps}</Badge>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Menaces détectées</span>
+                    <span className="font-medium text-red-500">{analytics.security.threats}</span>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-info/10 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-info" />
-                      <span className="text-sm">Tentatives échouées</span>
-                    </div>
-                    <Badge variant="outline">{analyticsData.security.failedLogins}</Badge>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">IPs bloquées</span>
+                    <span className="font-medium text-orange-500">{analytics.security.blockedIps}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Connexions échouées</span>
+                    <span className="font-medium text-yellow-500">{analytics.security.failedLogins}</span>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Score de sécurité global</CardTitle>
-                  <CardDescription>
-                    Évaluation basée sur les mesures de protection actives
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Activité Récente
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold mb-2">{analyticsData.security.securityScore}%</div>
-                    {getStatusBadge(analyticsData.security.securityScore)}
-                    <Progress value={analyticsData.security.securityScore} className="mt-4 h-3" />
-                  </div>
-                  
-                  <div className="mt-6 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Pare-feu activé</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>SSL/TLS configuré</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <span>Authentification 2FA</span>
+                  <div className="space-y-3">
+                    <div className="text-center py-8">
+                      <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Logs d'activité disponibles avec des données réelles
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
-
-          {/* Rapports */}
-          <TabsContent value="reports" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Génération de rapports</CardTitle>
-                <CardDescription>
-                  Exportez des rapports détaillés pour différentes périodes
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <h4 className="font-semibold">Rapport d'activité</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Statistiques d'utilisation et d'engagement
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Télécharger
-                    </Button>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <h4 className="font-semibold">Rapport de performance</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Métriques techniques et temps de réponse
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Télécharger
-                    </Button>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <h4 className="font-semibold">Rapport de sécurité</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Incidents et mesures de protection
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Télécharger
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator className="my-6" />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold">Rapport complet</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Toutes les métriques pour la période sélectionnée
-                    </p>
-                  </div>
-                  <Button onClick={handleExportReport}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Exporter tout
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
   );
-}
+};

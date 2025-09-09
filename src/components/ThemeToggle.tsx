@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import {
@@ -8,9 +7,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAppearance } from '@/contexts/AppearanceContext';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { config, updateLayout } = useAppearance();
+  const currentTheme = config.layout.theme;
+
+  const handleThemeChange = (theme: string) => {
+    updateLayout({ theme });
+  };
 
   return (
     <DropdownMenu>
@@ -22,15 +27,24 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover">
-        <DropdownMenuItem onClick={() => setTheme('light')} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => handleThemeChange('light')} 
+          className="cursor-pointer"
+        >
           <Sun className="mr-2 h-4 w-4" />
           <span>Clair</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => handleThemeChange('dark')} 
+          className="cursor-pointer"
+        >
           <Moon className="mr-2 h-4 w-4" />  
           <span>Sombre</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')} className="cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => handleThemeChange('system')} 
+          className="cursor-pointer"
+        >
           <Monitor className="mr-2 h-4 w-4" />
           <span>Système</span>
         </DropdownMenuItem>

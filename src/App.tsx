@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,28 +19,43 @@ import { Register } from "./pages/Register";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { Contact } from "./pages/Contact";
-import { AdminUsers } from "./pages/admin/AdminUsers";
-import { AdminSettings } from "./pages/admin/AdminSettings";
-import { AdminDatabase } from "./pages/admin/AdminDatabase";
-import { AdminAppearance } from "./pages/admin/AdminAppearance";
-import { AdminLegal } from "./pages/admin/AdminLegal";
-import { AdminMailing } from "./pages/admin/AdminMailing";
-import { AdminCommunity } from "./pages/admin/AdminCommunity";
-import { AdminChatbot } from "./pages/admin/AdminChatbot";
-import { AdminAnalytics } from "./pages/admin/AdminAnalytics";
-import { AdminCompanies } from "./pages/admin/AdminCompanies";
 import { AdminSecurity } from "./pages/admin/AdminSecurity";
 import { AdminSecurityHeaders } from "./pages/admin/AdminSecurityHeaders";
-import AdminSystem from "./pages/admin/AdminSystem";
-import { MediaShowcase } from "./pages/MediaShowcase";
-import { CommunityDashboard } from "./pages/community/CommunityDashboard";
-import { PrivacyPolicy } from "./pages/legal/PrivacyPolicy";
-import { TermsOfService } from "./pages/legal/TermsOfService";
-import { LegalNotice } from "./pages/legal/LegalNotice";
-import { CookiePolicy } from "./pages/legal/CookiePolicy";
+
+// Lazy loading pour les composants lourds
+const AdminAnalytics = React.lazy(() => import("./pages/admin/AdminAnalytics").then(module => ({ default: module.AdminAnalytics })));
+const AdminCompanies = React.lazy(() => import("./pages/admin/AdminCompanies").then(module => ({ default: module.AdminCompanies })));
+const AdminCommunity = React.lazy(() => import("./pages/admin/AdminCommunity").then(module => ({ default: module.AdminCommunity })));
+const AdminMailing = React.lazy(() => import("./pages/admin/AdminMailing").then(module => ({ default: module.AdminMailing })));
+const AdminAppearance = React.lazy(() => import("./pages/admin/AdminAppearance").then(module => ({ default: module.AdminAppearance })));
+const AdminLegal = React.lazy(() => import("./pages/admin/AdminLegal").then(module => ({ default: module.AdminLegal })));
+const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers").then(module => ({ default: module.AdminUsers })));
+const AdminDatabase = React.lazy(() => import("./pages/admin/AdminDatabase").then(module => ({ default: module.AdminDatabase })));
+const AdminChatbot = React.lazy(() => import("./pages/admin/AdminChatbot").then(module => ({ default: module.AdminChatbot })));
+const AdminSettings = React.lazy(() => import("./pages/admin/AdminSettings").then(module => ({ default: module.AdminSettings })));
+const AdminSystem = React.lazy(() => import("./pages/admin/AdminSystem"));
+const AdminPerformance = React.lazy(() => import("./pages/admin/AdminPerformance").then(module => ({ default: module.AdminPerformance })));
+const AdminSecurityIntegrated = React.lazy(() => import("./pages/admin/AdminSecurityIntegrated").then(module => ({ default: module.AdminSecurityIntegrated })));
+
+// Lazy loading pour les pages publiques
+const MediaShowcase = React.lazy(() => import("./pages/MediaShowcase").then(module => ({ default: module.MediaShowcase })));
+const CommunityDashboard = React.lazy(() => import("./pages/community/CommunityDashboard").then(module => ({ default: module.CommunityDashboard })));
+
+// Lazy loading pour les pages légales
+const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy").then(module => ({ default: module.PrivacyPolicy })));
+const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService").then(module => ({ default: module.TermsOfService })));
+const CookiePolicy = React.lazy(() => import("./pages/legal/CookiePolicy").then(module => ({ default: module.CookiePolicy })));
+const LegalNotice = React.lazy(() => import("./pages/legal/LegalNotice").then(module => ({ default: module.LegalNotice })));
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Composant de chargement pour le lazy loading
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -60,7 +76,8 @@ const App = () => (
                       v7_relativeSplatPath: true
                     }}
                   >
-                    <Routes>
+                    <React.Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/register" element={<Register />} />
@@ -95,9 +112,16 @@ const App = () => (
                       <Route path="/legal" element={<LegalNotice />} />
                       <Route path="/cookies" element={<CookiePolicy />} />
                       
+                      {/* Page d'optimisation des performances */}
+                      <Route path="/admin/performance" element={<AdminPerformance />} />
+                      
+                      {/* Page de sécurité intégrée */}
+                      <Route path="/admin/security-integrated" element={<AdminSecurityIntegrated />} />
+                      
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </React.Suspense>
                     <ChatbotWidget />
                   </BrowserRouter>
                 </TooltipProvider>

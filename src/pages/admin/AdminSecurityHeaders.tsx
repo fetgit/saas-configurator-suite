@@ -1,27 +1,15 @@
 import React, { useState } from 'react';
-import { Header } from '@/components/layout/Header';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { SecurityHeadersDisplay } from '@/components/SecurityHeadersDisplay';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
 import { Shield, Settings, Download, Upload, RefreshCw, Info } from 'lucide-react';
 
 export const AdminSecurityHeaders: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
   const [environment, setEnvironment] = useState<'development' | 'production'>('development');
   const [generatedHeaders, setGeneratedHeaders] = useState<{ [key: string]: string }>({});
-
-  // Vérifier les permissions
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   // Gérer la génération des headers
   const handleHeadersGenerated = (headers: { [key: string]: string }) => {
@@ -109,10 +97,8 @@ ${apacheConfig}
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+    <AdminLayout>
+      <div className="max-w-6xl mx-auto">
           {/* En-tête */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
@@ -255,8 +241,7 @@ ${apacheConfig}
               </div>
             </CardContent>
           </Card>
-        </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };

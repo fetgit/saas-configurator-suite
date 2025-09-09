@@ -108,40 +108,42 @@ export const Header: React.FC<HeaderProps> = ({ transparent = false }) => {
                   <Link to="/dashboard">{t('nav.dashboard')}</Link>
                 </Button>
 
-                {/* User Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {/* User Menu - Version simplifiée */}
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant={transparent ? 'ghost' : 'ghost'} 
+                    size="sm"
+                    asChild
+                    className={`gap-2 ${transparent ? 'text-white hover:text-white hover:bg-white/10' : ''}`}
+                  >
+                    <Link to="/profile">
+                      <User className="h-4 w-4" />
+                      Profil
+                    </Link>
+                  </Button>
+                  {(user?.role === 'admin' || user?.role === 'superadmin') && (
                     <Button 
                       variant={transparent ? 'ghost' : 'ghost'} 
                       size="sm"
+                      asChild
                       className={`gap-2 ${transparent ? 'text-white hover:text-white hover:bg-white/10' : ''}`}
                     >
-                      <User className="h-4 w-4" />
-                      {user?.name}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Profil
+                      <Link to="/admin">
+                        <Settings className="h-4 w-4" />
+                        {t('nav.admin')}
                       </Link>
-                    </DropdownMenuItem>
-                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center gap-2">
-                          <Settings className="h-4 w-4" />
-                          {t('nav.admin')}
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2">
-                      <LogOut className="h-4 w-4" />
-                      {t('auth.logout')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </Button>
+                  )}
+                  <Button 
+                    variant={transparent ? 'ghost' : 'ghost'} 
+                    size="sm"
+                    onClick={handleLogout}
+                    className={`gap-2 ${transparent ? 'text-white hover:text-white hover:bg-white/10' : ''}`}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {t('auth.logout')}
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-2">

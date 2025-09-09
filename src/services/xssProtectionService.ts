@@ -316,12 +316,23 @@ export class XSSProtectionService {
   // Détecter les tentatives d'injection SQL
   static detectSQLInjection(input: string): boolean {
     const sqlPatterns = [
-      /('|(\\')|(;)|(\-\-)|(\s+union\s+)/gi,
-      /(\s+or\s+|\s+and\s+).*?=.*?/gi,
-      /(\s+select\s+|\s+insert\s+|\s+update\s+|\s+delete\s+)/gi,
-      /(\s+drop\s+|\s+create\s+|\s+alter\s+)/gi,
-      /(\s+exec\s+|\s+execute\s+)/gi,
-      /(\s+script\s+|\s+eval\s+)/gi
+      /'/gi,
+      /;/gi,
+      /--/gi,
+      /\s+union\s+/gi,
+      /\s+or\s+.*?=.*?/gi,
+      /\s+and\s+.*?=.*?/gi,
+      /\s+select\s+/gi,
+      /\s+insert\s+/gi,
+      /\s+update\s+/gi,
+      /\s+delete\s+/gi,
+      /\s+drop\s+/gi,
+      /\s+create\s+/gi,
+      /\s+alter\s+/gi,
+      /\s+exec\s+/gi,
+      /\s+execute\s+/gi,
+      /\s+script\s+/gi,
+      /\s+eval\s+/gi
     ];
 
     return sqlPatterns.some(pattern => pattern.test(input));

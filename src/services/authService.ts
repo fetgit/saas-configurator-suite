@@ -86,16 +86,18 @@ export class AuthService {
       jti: this.generateJTI()
     };
 
-    // En production, utilisez une vraie bibliothèque JWT comme jsonwebtoken
-    // Pour le développement, on simule la génération
+    // Utiliser une génération JWT compatible avec le standard
     const header = {
       alg: 'HS256',
       typ: 'JWT'
     };
 
-    const encodedHeader = btoa(JSON.stringify(header));
-    const encodedPayload = btoa(JSON.stringify(jwtPayload));
-    const signature = await this.generateSignature(encodedHeader, encodedPayload);
+    // Encoder en Base64URL (compatible JWT)
+    const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
+    const encodedPayload = this.base64UrlEncode(JSON.stringify(jwtPayload));
+    
+    // Générer la signature avec HMAC-SHA256
+    const signature = await this.generateHMACSignature(encodedHeader, encodedPayload);
 
     return `${encodedHeader}.${encodedPayload}.${signature}`;
   }
@@ -132,8 +134,14 @@ export class AuthService {
     return crypto.randomUUID();
   }
 
-  // Générer une signature (simulation)
-  private static async generateSignature(header: string, payload: string): Promise<string> {
+  // Encoder en Base64URL (compatible JWT)
+  private static base64UrlEncode(str: string): string {
+    const base64 = btoa(str);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
+  // Générer une signature HMAC-SHA256 compatible JWT
+  private static async generateHMACSignature(header: string, payload: string): Promise<string> {
     const data = `${header}.${payload}`;
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secrets.jwt.secret);
@@ -149,7 +157,13 @@ export class AuthService {
     
     const signature = await crypto.subtle.sign('HMAC', key, dataBuffer);
     const signatureArray = new Uint8Array(signature);
-    return btoa(String.fromCharCode(...signatureArray));
+    
+    // Convertir en Base64URL (compatible JWT)
+    let base64 = btoa(String.fromCharCode(...signatureArray));
+    // Remplacer les caractères non-URL-safe
+    base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    
+    return base64;
   }
 
   // Vérifier un JWT token
@@ -163,13 +177,14 @@ export class AuthService {
       const [header, payload, signature] = parts;
       
       // Vérifier la signature
-      const expectedSignature = await this.generateSignature(header, payload);
+      const expectedSignature = await this.generateHMACSignature(header, payload);
       if (signature !== expectedSignature) {
         throw new Error('Signature JWT invalide');
       }
 
-      // Décoder le payload
-      const decodedPayload = JSON.parse(atob(payload)) as JWTPayload;
+      // Décoder le payload (Base64URL vers Base64 standard)
+      const base64Payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const decodedPayload = JSON.parse(atob(base64Payload)) as JWTPayload;
       
       // Vérifier l'expiration
       if (decodedPayload.exp < Math.floor(Date.now() / 1000)) {
@@ -410,6 +425,18 @@ export class AuthService {
       localStorage.removeItem(this.TOKEN_STORAGE_KEY);
       localStorage.removeItem(this.USER_STORAGE_KEY);
       
+      // Supprimer aussi les anciens tokens non chiffrés (au cas où)
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('auth_tokens');
+      
+      // Forcer la vérification que les tokens sont bien supprimés
+      const tokensAfterLogout = await this.getStoredTokens();
+      if (tokensAfterLogout) {
+        console.warn('⚠️ Tokens encore présents après déconnexion, suppression forcée');
+        localStorage.clear(); // Dernière option : tout nettoyer
+      }
+      
       // En production, ajoutez le token à une liste noire
       console.log('Déconnexion réussie');
     } catch (error) {
@@ -426,21 +453,31 @@ export class AuthService {
       timestamp: Date.now()
     };
     
-    // Chiffrer les tokens avant de les stocker
-    const encryptedTokens = await EncryptionService.encryptString(JSON.stringify(tokens));
-    localStorage.setItem(this.TOKEN_STORAGE_KEY, encryptedTokens);
+    // TEMPORAIRE: Stocker sans chiffrement pour debug
+    console.log('🔍 Debug: Stockage token sans chiffrement');
+    localStorage.setItem(this.TOKEN_STORAGE_KEY, JSON.stringify(tokens));
+    
+    // Chiffrer les tokens avant de les stocker (désactivé temporairement)
+    // const encryptedTokens = await EncryptionService.encryptString(JSON.stringify(tokens));
+    // localStorage.setItem(this.TOKEN_STORAGE_KEY, encryptedTokens);
   }
 
   // Récupérer les tokens stockés
   static async getStoredTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
     try {
-      const encryptedTokens = localStorage.getItem(this.TOKEN_STORAGE_KEY);
-      if (!encryptedTokens) {
+      const storedTokens = localStorage.getItem(this.TOKEN_STORAGE_KEY);
+      if (!storedTokens) {
         return null;
       }
 
-      const tokens = JSON.parse(await EncryptionService.decryptString(encryptedTokens));
+      // TEMPORAIRE: Récupérer sans déchiffrement pour debug
+      console.log('🔍 Debug: Récupération token sans déchiffrement');
+      const tokens = JSON.parse(storedTokens);
       return tokens;
+      
+      // Déchiffrer les tokens (désactivé temporairement)
+      // const tokens = JSON.parse(await EncryptionService.decryptString(encryptedTokens));
+      // return tokens;
     } catch (error) {
       console.error('Erreur lors de la récupération des tokens:', error);
       return null;

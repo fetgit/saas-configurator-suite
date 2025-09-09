@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 export interface HeroConfig {
   showHero: boolean;
@@ -121,52 +121,75 @@ export const AppearanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, []);
 
-  // Save config to localStorage whenever it changes
+  // Apply theme to DOM
   useEffect(() => {
-    localStorage.setItem('appearanceConfig', JSON.stringify(config));
+    const { theme } = config.layout;
+    const htmlElement = document.documentElement;
+    
+    if (theme === 'dark') {
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+    }
+  }, [config.layout.theme]);
+
+  // Save config to localStorage whenever it changes (debounced)
+  useEffect(() => {
+    // Skip saving on initial load to prevent unnecessary re-renders
+    if (config.layout.theme === 'light' && config.colors.primary === '#3b82f6') {
+      return;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('appearanceConfig', JSON.stringify(config));
+    }, 500); // Increased debounce time
+    
+    return () => clearTimeout(timeoutId);
   }, [config]);
 
-  const updateConfig = (updates: Partial<AppearanceConfig>) => {
+  const updateConfig = useCallback((updates: Partial<AppearanceConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const updateColors = (colors: Partial<AppearanceConfig['colors']>) => {
+  const updateColors = useCallback((colors: Partial<AppearanceConfig['colors']>) => {
     setConfig(prev => ({
       ...prev,
       colors: { ...prev.colors, ...colors }
     }));
-  };
+  }, []);
 
-  const updateBranding = (branding: Partial<AppearanceConfig['branding']>) => {
+  const updateBranding = useCallback((branding: Partial<AppearanceConfig['branding']>) => {
     setConfig(prev => ({
       ...prev,
       branding: { ...prev.branding, ...branding }
     }));
-  };
+  }, []);
 
-  const updateLayout = (layout: Partial<AppearanceConfig['layout']>) => {
+  const updateLayout = useCallback((layout: Partial<AppearanceConfig['layout']>) => {
     setConfig(prev => ({
       ...prev,
       layout: { ...prev.layout, ...layout }
     }));
-  };
+  }, []);
 
-  const updateHeroConfig = (heroConfig: Partial<HeroConfig>) => {
+  const updateHeroConfig = useCallback((heroConfig: Partial<HeroConfig>) => {
     setConfig(prev => ({
       ...prev,
       heroConfig: { ...prev.heroConfig, ...heroConfig }
     }));
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    config,
+    updateConfig,
+    updateColors,
+    updateBranding,
+    updateLayout,
+    updateHeroConfig
+  }), [config, updateConfig, updateColors, updateBranding, updateLayout, updateHeroConfig]);
 
   return (
-    <AppearanceContext.Provider value={{
-      config,
-      updateConfig,
-      updateColors,
-      updateBranding,
-      updateLayout,
-      updateHeroConfig
-    }}>
+    <AppearanceContext.Provider value={contextValue}>
       {children}
     </AppearanceContext.Provider>
   );
