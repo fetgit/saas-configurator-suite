@@ -28,35 +28,43 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAppearance } from '@/contexts/AppearanceContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMedia } from '@/contexts/MediaContext';
+import { ImageUpload } from '@/components/ImageUpload';
+import { MediaLibrary } from '@/components/admin/MediaLibrary';
+import { UploadedFile } from '@/services/mediaService';
 
 export const AdminAppearance = () => {
   const { toast } = useToast();
   const { config, updateColors, updateBranding, updateLayout, updateHeroConfig, updateConfig } = useAppearance();
   const { t } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
+  const { mediaLibrary, refreshMediaLibrary } = useMedia();
+  const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
+
+  // Debug de l'état d'authentification
+  const storedTokens = localStorage.getItem('auth_tokens');
+  let tokenInfo = 'absent';
+  let tokenStart = '...';
+  if (storedTokens) {
+    try {
+      const tokens = JSON.parse(storedTokens);
+      tokenInfo = tokens.accessToken ? 'présent' : 'absent';
+      tokenStart = tokens.accessToken ? tokens.accessToken.substring(0, 20) + '...' : '...';
+    } catch (error) {
+      tokenInfo = 'erreur';
+    }
+  }
+  
+  console.log('🔍 AdminAppearance - État d\'authentification:', {
+    isAuthenticated,
+    user: user ? { id: user.id, email: user.email, role: user.role } : null,
+    token: tokenInfo,
+    storedTokens: storedTokens ? 'présent' : 'absent'
+  });
 
   const [isLoading, setIsLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-  const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
-
-  // États locaux pour la médiathèque (temporaire pour démo)
-  const [mediaLibrary, setMediaLibrary] = useState([
-    {
-      id: '1',
-      name: 'hero-image.jpg',
-      url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800',
-      type: 'image' as const,
-      size: 245678,
-      uploadDate: '2024-01-20'
-    },
-    {
-      id: '2', 
-      name: 'feature-1.jpg',
-      url: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400',
-      type: 'image' as const,
-      size: 156789,
-      uploadDate: '2024-01-19'
-    }
-  ]);
 
   const handleColorChange = (colorKey: string, value: string) => {
     updateColors({ [colorKey]: value });
@@ -72,6 +80,27 @@ export const AdminAppearance = () => {
 
   const handleHeroConfigChange = (field: string, value: any) => {
     updateHeroConfig({ [field]: value });
+  };
+
+  const handleHeroImageSelect = (file: UploadedFile) => {
+    updateHeroConfig({ 
+      backgroundImage: file.url,
+      backgroundImageId: file.id
+    });
+  };
+
+  const handleLogoSelect = (file: UploadedFile) => {
+    updateBranding({
+      logoUrl: file.url,
+      logoId: file.id
+    });
+  };
+
+  const handleFaviconSelect = (file: UploadedFile) => {
+    updateBranding({
+      faviconUrl: file.url,
+      faviconId: file.id
+    });
   };
 
   const saveAppearanceSettings = async () => {
@@ -176,17 +205,11 @@ export const AdminAppearance = () => {
     });
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -289,78 +312,190 @@ export const AdminAppearance = () => {
 
           {/* Onglet Marque */}
           <TabsContent value="branding">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("admin.appearance.branding.title")}</CardTitle>
-                <CardDescription>
-                  {t("admin.appearance.branding.subtitle")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t("admin.appearance.branding.companyName")}</Label>
-                  <Input
-                    value={config.branding.companyName}
-                    onChange={(e) => handleBrandingChange('companyName', e.target.value)}
-                    placeholder="Mon Entreprise SaaS"
-                  />
+            <div className="space-y-6">
+              {/* Header */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Type className="h-5 w-5" />
+                    {t("admin.appearance.branding.title")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("admin.appearance.branding.subtitle")}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Configuration en 2 colonnes */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Colonne gauche - Informations de base */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Informations de base
+                      </CardTitle>
+                      <CardDescription>
+                        Configurez le nom et les éléments textuels de votre marque
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName" className="text-sm font-medium">
+                          {t("admin.appearance.branding.companyName")}
+                        </Label>
+                        <Input
+                          id="companyName"
+                          value={config.branding.companyName}
+                          onChange={(e) => handleBrandingChange('companyName', e.target.value)}
+                          placeholder="Mon Entreprise SaaS"
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Ce nom apparaîtra dans l'en-tête et le pied de page
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Image className="h-4 w-4" />
+                        Logo principal
+                      </CardTitle>
+                      <CardDescription>
+                        Logo affiché dans l'en-tête de votre site
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ImageUpload
+                        category="logo"
+                        onImageSelect={handleLogoSelect}
+                        selectedImageId={config.branding.logoId}
+                        showPreview={true}
+                        maxFiles={1}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>{t("admin.appearance.branding.logo")}</Label>
-                  <div className="space-y-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          handleBrandingChange('logoUrl', url);
-                        }
-                      }}
-                    />
-                    {config.branding.logoUrl && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md">
-                        <img 
-                          src={config.branding.logoUrl} 
-                          alt="Logo preview" 
-                          className="w-8 h-8 object-contain"
-                        />
-                        <span className="text-sm text-muted-foreground">{t("admin.appearance.branding.logoPreview")}</span>
+                {/* Colonne droite - Éléments visuels */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Favicon
+                      </CardTitle>
+                      <CardDescription>
+                        Icône affichée dans l'onglet du navigateur
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ImageUpload
+                        category="favicon"
+                        onImageSelect={handleFaviconSelect}
+                        selectedImageId={config.branding.faviconId}
+                        showPreview={true}
+                        maxFiles={1}
+                      />
+                      <div className="mt-3 p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Conseil :</strong> Utilisez une image carrée (16x16, 32x32 ou 64x64 pixels) 
+                          pour un rendu optimal dans tous les navigateurs.
+                        </p>
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </CardContent>
+                  </Card>
 
-                <div className="space-y-2">
-                  <Label>{t("admin.appearance.branding.favicon")}</Label>
-                  <div className="space-y-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          handleBrandingChange('faviconUrl', url);
-                        }
-                      }}
-                    />
-                    {config.branding.faviconUrl && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md">
-                        <img 
-                          src={config.branding.faviconUrl} 
-                          alt="Favicon preview" 
-                          className="w-4 h-4 object-contain"
-                        />
-                        <span className="text-sm text-muted-foreground">{t("admin.appearance.branding.faviconPreview")}</span>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Layout className="h-4 w-4" />
+                        Aperçu de la marque
+                      </CardTitle>
+                      <CardDescription>
+                        Visualisez comment votre marque apparaît
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Aperçu en-tête */}
+                        <div className="border rounded-lg p-4 bg-background">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {config.branding.logoUrl && (
+                                <img 
+                                  src={config.branding.logoUrl} 
+                                  alt="Logo" 
+                                  className="h-8 w-auto"
+                                />
+                              )}
+                              <span className="font-semibold text-sm">
+                                {config.branding.companyName || "Nom de l'entreprise"}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              En-tête
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Aperçu onglet navigateur */}
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            {config.branding.faviconUrl && (
+                              <img 
+                                src={config.branding.faviconUrl} 
+                                alt="Favicon" 
+                                className="h-4 w-4"
+                              />
+                            )}
+                            <span className="text-xs">
+                              {config.branding.companyName || "Mon Entreprise SaaS"} - Page d'accueil
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Onglet du navigateur
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Actions en bas */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Les modifications sont sauvegardées automatiquement
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewMode(!previewMode)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {previewMode ? "Masquer" : "Aperçu"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Actualiser
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Onglet Mise en page */}
@@ -496,36 +631,10 @@ export const AdminAppearance = () => {
                       <p className="text-sm text-muted-foreground">{t("admin.appearance.media.hiddenDesc")}</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {mediaLibrary.map((media) => (
-                        <div key={media.id} className="group relative">
-                          <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                            <img
-                              src={media.url}
-                              alt={media.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                            />
-                          </div>
-                          <div className="mt-2 space-y-1">
-                            <p className="text-sm font-medium truncate">{media.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(media.size)} • {new Date(media.uploadDate).toLocaleDateString('fr-FR')}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {mediaLibrary.length === 0 && config.mediaLibraryVisible && (
-                    <div className="text-center py-12">
-                      <Image className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">{t("admin.appearance.media.empty")}</p>
-                      <Button className="mt-4" onClick={() => setIsMediaDialogOpen(true)}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        {t("admin.appearance.media.addFirst")}
-                      </Button>
-                    </div>
+                    <MediaLibrary 
+                      showUploadButton={false}
+                      category="all"
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -560,16 +669,34 @@ export const AdminAppearance = () => {
           {/* Onglet Carrousels */}
           <TabsContent value="carousel">
             <div className="space-y-6">
+              {/* Header */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("admin.appearance.carousel.title")}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5" />
+                    {t("admin.appearance.carousel.title")}
+                  </CardTitle>
                   <CardDescription>
                     {t("admin.appearance.carousel.subtitle")}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+              </Card>
+
+              {/* Configuration en 2 colonnes */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Colonne gauche - Paramètres du carrousel */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Paramètres du carrousel
+                      </CardTitle>
+                      <CardDescription>
+                        Configurez le comportement et l'apparence du carrousel
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label>{t("admin.appearance.carousel.autoplay")}</Label>
                         <Switch
@@ -602,16 +729,33 @@ export const AdminAppearance = () => {
                           checked={config.carouselConfig?.showArrows !== false}
                           onCheckedChange={(checked) => updateConfig({ carouselConfig: { ...config.carouselConfig, showArrows: checked } })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Afficher les flèches de navigation
+                        </p>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Options d'affichage
+                      </CardTitle>
+                      <CardDescription>
+                        Personnalisez l'apparence du carrousel
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label>{t("admin.appearance.carousel.showDots")}</Label>
                         <Switch
                           checked={config.carouselConfig?.showDots !== false}
                           onCheckedChange={(checked) => updateConfig({ carouselConfig: { ...config.carouselConfig, showDots: checked } })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Afficher les points de navigation
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -649,98 +793,185 @@ export const AdminAppearance = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("admin.appearance.carousel.imagesTitle")}</CardTitle>
-                  <CardDescription>
-                    {t("admin.appearance.carousel.imagesDesc")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        {(config.carouselConfig?.images || []).length} {t("admin.appearance.carousel.imagesCount")}
-                      </p>
-                      <Button 
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.multiple = true;
-                          input.onchange = (e) => {
-                            const files = Array.from((e.target as HTMLInputElement).files || []);
-                            const newImages = files.map(file => ({
-                              id: Math.random().toString(36).substr(2, 9),
-                              url: URL.createObjectURL(file),
-                              alt: file.name.split('.')[0]
-                            }));
-                            const currentImages = config.carouselConfig?.images || [];
-                            updateConfig({ 
-                              carouselConfig: { 
-                                ...config.carouselConfig, 
-                                images: [...currentImages, ...newImages] 
-                              } 
-                            });
-                          };
-                          input.click();
-                        }}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {t("admin.appearance.carousel.addImages")}
-                      </Button>
-                    </div>
-
-                    {(config.carouselConfig?.images || []).length > 0 ? (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {(config.carouselConfig?.images || []).map((image: any, index: number) => (
-                          <div key={image.id} className="relative group">
-                            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                              <img
-                                src={image.url}
-                                alt={image.alt}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <Button
-                              variant="destructive"
+                {/* Colonne droite - Gestion des images */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Image className="h-4 w-4" />
+                        Images du carrousel
+                      </CardTitle>
+                      <CardDescription>
+                        Gérez les images affichées dans le carrousel
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-muted-foreground">
+                            Utilisez la médiathèque pour ajouter des images
+                          </p>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => refreshMediaLibrary()}
+                              variant="outline"
                               size="sm"
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => {
-                                const currentImages = config.carouselConfig?.images || [];
-                                const newImages = currentImages.filter((_: any, i: number) => i !== index);
-                                updateConfig({ 
-                                  carouselConfig: { 
-                                    ...config.carouselConfig, 
-                                    images: newImages 
-                                  } 
-                                });
-                              }}
                             >
-                              ×
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Actualiser
                             </Button>
-                            <p className="text-xs text-muted-foreground mt-1 truncate">
-                              {image.alt}
+                            <Button 
+                              onClick={() => setIsMediaDialogOpen(true)}
+                              variant="outline"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Ouvrir la médiathèque
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 border-2 border-dashed border-muted-foreground/25 rounded-lg text-center">
+                          <Image className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Les images du carrousel proviennent de la médiathèque
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Catégorie recommandée : "carousel" ou "general"
+                          </p>
+                        </div>
+
+                        <div className="mt-3 p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Conseil :</strong> Le carrousel utilise automatiquement les images 
+                            de la médiathèque. Assurez-vous d'avoir des images dans la catégorie appropriée.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Aperçu du carrousel
+                      </CardTitle>
+                      <CardDescription>
+                        Visualisez le carrousel avec les paramètres actuels
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <div className="text-center">
+                            {/* Aperçu du carrousel avec vraies images */}
+                            <div className="relative w-full h-32 bg-muted rounded-lg overflow-hidden mb-3">
+                              {mediaLibrary && mediaLibrary.length > 0 ? (
+                                <div className="relative w-full h-full">
+                                  {/* Image principale */}
+                                  <img
+                                    src={mediaLibrary[0].url}
+                                    alt={mediaLibrary[0].name}
+                                    className="w-full h-full object-cover"
+                                    crossOrigin="anonymous"
+                                  />
+                                  
+                                  {/* Overlay avec informations */}
+                                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <div className="text-white text-center">
+                                      <div className="text-xs font-medium">
+                                        {mediaLibrary.length} image{mediaLibrary.length > 1 ? 's' : ''}
+                                      </div>
+                                      <div className="text-xs opacity-75">
+                                        Carrousel
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Indicateurs de navigation */}
+                                  {config.carouselConfig?.showDots !== false && (
+                                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                                      {mediaLibrary.slice(0, 3).map((_, index) => (
+                                        <div
+                                          key={index}
+                                          className={`w-2 h-2 rounded-full ${
+                                            index === 0 ? 'bg-white' : 'bg-white/50'
+                                          }`}
+                                        />
+                                      ))}
+                                      {mediaLibrary.length > 3 && (
+                                        <div className="w-2 h-2 rounded-full bg-white/30 flex items-center justify-center">
+                                          <span className="text-xs text-white">+</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Flèches de navigation */}
+                                  {config.carouselConfig?.showArrows !== false && (
+                                    <>
+                                      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xs">‹</span>
+                                      </div>
+                                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xs">›</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <div className="text-center">
+                                    <Image className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-xs text-muted-foreground">
+                                      Aucune image disponible
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground">
+                              Aperçu du carrousel
                             </p>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <p><strong>Images disponibles :</strong> {mediaLibrary?.length || 0}</p>
+                          <p><strong>Autoplay :</strong> {config.carouselConfig?.autoplay ? 'Activé' : 'Désactivé'}</p>
+                          <p><strong>Intervalle :</strong> {config.carouselConfig?.interval || 3000}ms</p>
+                          <p><strong>Points :</strong> {config.carouselConfig?.showDots !== false ? 'Affichés' : 'Masqués'}</p>
+                          <p><strong>Flèches :</strong> {config.carouselConfig?.showArrows !== false ? 'Affichées' : 'Masquées'}</p>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                        <Image className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          {t("admin.appearance.carousel.noImages")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Dialog de médiathèque */}
+              <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Médiathèque - Images du carrousel</DialogTitle>
+                    <DialogDescription>
+                      Sélectionnez les images à utiliser dans le carrousel
+                    </DialogDescription>
+                  </DialogHeader>
+                  <MediaLibrary 
+                    onMediaSelect={(file) => {
+                      console.log('Image sélectionnée pour le carrousel:', file);
+                      setIsMediaDialogOpen(false);
+                    }}
+                    category="carousel"
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </TabsContent>
 
@@ -819,12 +1050,14 @@ export const AdminAppearance = () => {
                       )}
 
                       {config.heroConfig.backgroundType === 'image' && (
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                           <Label>{t("admin.appearance.content.backgroundImage")}</Label>
-                          <Input
-                            value={config.heroConfig.backgroundImage}
-                            onChange={(e) => handleHeroConfigChange('backgroundImage', e.target.value)}
-                            placeholder="https://exemple.com/image.jpg"
+                          <ImageUpload
+                            category="hero"
+                            onImageSelect={handleHeroImageSelect}
+                            selectedImageId={config.heroConfig.backgroundImageId}
+                            showPreview={true}
+                            maxFiles={1}
                           />
                         </div>
                       )}
@@ -910,24 +1143,17 @@ export const AdminAppearance = () => {
 
         {/* Dialog pour upload de médias */}
         <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-            <DialogTitle>{t("admin.appearance.upload.title")}</DialogTitle>
-            <DialogDescription>
-              {t("admin.appearance.upload.desc")}
-            </DialogDescription>
+              <DialogTitle>Médiathèque - Ajouter des médias</DialogTitle>
+              <DialogDescription>
+                Gérez votre médiathèque et uploadez de nouveaux médias
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  {t("admin.appearance.upload.development")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("admin.appearance.upload.future")}
-                </p>
-              </div>
-            </div>
+            <MediaLibrary 
+              showUploadButton={true}
+              category="all"
+            />
           </DialogContent>
         </Dialog>
       </div>

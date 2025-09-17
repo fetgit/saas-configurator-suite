@@ -43,34 +43,34 @@ export const loadSecrets = (): AppSecrets => {
   // En production, ces valeurs viendront des variables d'environnement
   // En développement, on utilise des valeurs par défaut sécurisées
   
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = import.meta.env.PROD;
   
   if (isProduction) {
     // En production, toutes les valeurs doivent venir des variables d'environnement
     return {
       database: {
-        host: process.env.DB_HOST || '',
-        port: parseInt(process.env.DB_PORT || '5432'),
-        database: process.env.DB_NAME || '',
-        username: process.env.DB_USER || '',
-        password: process.env.DB_PASSWORD || '',
-        ssl: process.env.DB_SSL === 'true'
+        host: import.meta.env.VITE_DB_HOST || '',
+        port: parseInt(import.meta.env.VITE_DB_PORT || '5432'),
+        database: import.meta.env.VITE_DB_NAME || '',
+        username: import.meta.env.VITE_DB_USER || '',
+        password: import.meta.env.VITE_DB_PASSWORD || '',
+        ssl: import.meta.env.VITE_DB_SSL === 'true'
       },
       jwt: {
-        secret: process.env.JWT_SECRET || '',
-        expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-        refreshSecret: process.env.JWT_REFRESH_SECRET || '',
-        refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+        secret: import.meta.env.VITE_JWT_SECRET || '',
+        expiresIn: import.meta.env.VITE_JWT_EXPIRES_IN || '1h',
+        refreshSecret: import.meta.env.VITE_JWT_REFRESH_SECRET || '',
+        refreshExpiresIn: import.meta.env.VITE_JWT_REFRESH_EXPIRES_IN || '7d'
       },
       encryption: {
-        algorithm: process.env.ENCRYPTION_ALGORITHM || 'aes-256-gcm',
-        key: process.env.ENCRYPTION_KEY || '',
-        iv: process.env.ENCRYPTION_IV || ''
+        algorithm: import.meta.env.VITE_ENCRYPTION_ALGORITHM || 'aes-256-gcm',
+        key: import.meta.env.VITE_ENCRYPTION_KEY || '',
+        iv: import.meta.env.VITE_ENCRYPTION_IV || ''
       },
       apiKeys: {
-        chatbot: process.env.CHATBOT_API_KEY || '',
-        mailing: process.env.MAILING_API_KEY || '',
-        analytics: process.env.ANALYTICS_API_KEY || ''
+        chatbot: import.meta.env.VITE_CHATBOT_API_KEY || '',
+        mailing: import.meta.env.VITE_MAILING_API_KEY || '',
+        analytics: import.meta.env.VITE_ANALYTICS_API_KEY || ''
       }
     };
   } else {
@@ -139,5 +139,5 @@ export const logSecrets = (): void => {
   console.log(`   Database Password: ${maskSecret(secrets.database.password)}`);
   console.log(`   JWT Secret: ${maskSecret(secrets.jwt.secret)}`);
   console.log(`   Encryption Key: ${maskSecret(secrets.encryption.key)}`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Environment: ${import.meta.env.MODE || 'development'}`);
 };

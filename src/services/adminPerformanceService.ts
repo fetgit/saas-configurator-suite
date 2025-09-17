@@ -24,7 +24,7 @@ export interface PerformanceAlert {
 }
 
 class AdminPerformanceService {
-  private baseUrl = 'http://localhost:3001/api/admin';
+  private baseUrl = 'http://localhost:3003/api/admin';
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     // Import dynamique pour éviter les dépendances circulaires

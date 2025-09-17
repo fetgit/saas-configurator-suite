@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { localDatabaseConfigService, type DatabaseConfig } from '@/services/localPostgresService';
 import { SyncButton } from '@/components/admin/SyncButton';
 import { DatabaseStatus } from '@/components/admin/DatabaseStatus';
+import { DatabaseMonitoring } from '@/components/admin/DatabaseMonitoring';
 import { ConfigManager } from '@/components/admin/ConfigManager';
 import { autoCreateDatabase } from '@/services/autoDatabaseService';
 
@@ -682,97 +683,7 @@ export const AdminDatabase = () => {
 
           {/* Onglet Surveillance */}
           <TabsContent value="monitoring">
-            <div className="grid gap-6">
-              {/* Statistiques de performance */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Statistiques de performance {dbType.toUpperCase()}</CardTitle>
-                  <CardDescription>
-                    Surveillez les performances de votre base de données {dbType.toUpperCase()} en temps réel
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Connexions actives</p>
-                      <p className="text-2xl font-bold">12 / 50</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: '24%' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Requêtes par seconde</p>
-                      <p className="text-2xl font-bold">147</p>
-                      <p className="text-xs text-muted-foreground">Moyenne sur 5 min</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Temps de réponse moyen</p>
-                      <p className="text-2xl font-bold">23ms</p>
-                      <p className="text-xs text-success">Performance excellente</p>
-                    </div>
-                  </div>
-
-                  {dbType === 'postgresql' && (
-                    <div className="mt-6 pt-6 border-t">
-                      <h4 className="font-medium mb-4">Métriques PostgreSQL spécifiques</h4>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Cache hit ratio</p>
-                          <p className="text-2xl font-bold">98.5%</p>
-                          <p className="text-xs text-success">Excellent</p>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Locks actifs</p>
-                          <p className="text-2xl font-bold">3</p>
-                          <p className="text-xs text-muted-foreground">Normal</p>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Taille de la base</p>
-                          <p className="text-2xl font-bold">2.3 GB</p>
-                          <p className="text-xs text-muted-foreground">Croissance stable</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Logs et événements */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Logs et événements récents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Connexion établie avec succès</p>
-                        <p className="text-xs text-muted-foreground">Il y a 2 minutes</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <AlertCircle className="h-4 w-4 text-warning" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Requête lente détectée (2.3s)</p>
-                        <p className="text-xs text-muted-foreground">Il y a 15 minutes</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Sauvegarde automatique terminée</p>
-                        <p className="text-xs text-muted-foreground">Il y a 1 heure</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <DatabaseMonitoring />
           </TabsContent>
 
           {/* Onglet Statut */}

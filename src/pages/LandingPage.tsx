@@ -24,6 +24,21 @@ export const LandingPage = () => {
   const { t } = useLanguage();
   const { config } = useAppearance();
 
+  // Debug de la configuration hero
+  React.useEffect(() => {
+    console.log('🔍 LandingPage - Configuration hero:', {
+      showHero: config.heroConfig.showHero,
+      backgroundType: config.heroConfig.backgroundType,
+      backgroundColor: config.heroConfig.backgroundColor,
+      backgroundImage: config.heroConfig.backgroundImage,
+      backgroundImageId: config.heroConfig.backgroundImageId
+    });
+    
+    if (config.heroConfig.backgroundType === 'color' && config.heroConfig.backgroundColor) {
+      console.log('🎨 Couleur hero appliquée:', config.heroConfig.backgroundColor);
+    }
+  }, [config.heroConfig]);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header avec navigation */}
@@ -33,20 +48,33 @@ export const LandingPage = () => {
       {config.heroConfig.showHero && (
         <section className="relative pt-20 pb-32 overflow-hidden">
           {/* Background */}
-          <div 
-            className={`absolute inset-0`}
-            style={{
-              backgroundColor: config.heroConfig.backgroundType === 'color' ? config.heroConfig.backgroundColor : undefined,
-              backgroundImage: config.heroConfig.backgroundType === 'image' && config.heroConfig.backgroundImage ? `url(${config.heroConfig.backgroundImage})` : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
+          <div className="absolute inset-0">
             {config.heroConfig.backgroundType === 'color' && (
-              <div className="absolute inset-0 bg-gradient-hero"></div>
+              <div 
+                className="absolute inset-0"
+                style={{ 
+                  backgroundColor: config.heroConfig.backgroundColor,
+                  background: `linear-gradient(135deg, ${config.heroConfig.backgroundColor} 0%, ${config.heroConfig.backgroundColor}dd 100%)`
+                }}
+              ></div>
             )}
             {config.heroConfig.backgroundType === 'image' && config.heroConfig.backgroundImage && (
-              <div className="absolute inset-0 bg-black/40"></div>
+              <>
+                <img 
+                  src={config.heroConfig.backgroundImage}
+                  alt="Hero background"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  crossOrigin="anonymous"
+                  onLoad={() => console.log('✅ Image hero chargée:', config.heroConfig.backgroundImage)}
+                  onError={(e) => console.error('❌ Erreur chargement image hero:', e, config.heroConfig.backgroundImage)}
+                />
+                <div className="absolute inset-0 bg-black/40"></div>
+              </>
+            )}
+            {config.heroConfig.backgroundType === 'image' && !config.heroConfig.backgroundImage && (
+              <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                <p className="text-white text-lg">Aucune image hero configurée</p>
+              </div>
             )}
           </div>
           <div className="absolute inset-0 bg-grid-white/10 bg-grid-16 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
@@ -61,7 +89,10 @@ export const LandingPage = () => {
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
                 {config.branding.heroTitle || t('hero.title')}
               </h1>
-              <p className="text-xl text-white/90 mb-8 max-w-2xl leading-relaxed">
+              <p className={`text-xl text-white/90 mb-8 leading-relaxed ${
+                config.heroConfig.layout === 'centered' ? 'max-w-2xl mx-auto' : 
+                config.heroConfig.layout === 'left' ? 'max-w-2xl' : 'max-w-2xl ml-auto'
+              }`}>
                 {config.branding.heroSubtitle || t('hero.subtitle')}
               </p>
               
@@ -459,6 +490,7 @@ export const LandingPage = () => {
                         alt="Logo" 
                         className="w-8 h-8"
                         style={{ borderRadius: config.layout.borderRadius }}
+                        crossOrigin="anonymous"
                       />
                     ) : (
                       <div 

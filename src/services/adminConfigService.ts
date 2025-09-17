@@ -314,7 +314,7 @@ export interface AnalyticsConfig {
 }
 
 // Configuration de l'API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003/api';
 
 // Fonction utilitaire pour chiffrer les données sensibles
 const encryptSensitiveData = (data: string): string => {

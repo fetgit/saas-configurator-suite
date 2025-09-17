@@ -306,14 +306,14 @@ export function usePaymentMethods() {
  */
 export const stripeWebhookHandler = `
 // backend/webhooks/stripe.js
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// const stripe = require('stripe')(import.meta.env.VITE_STRIPE_SECRET_KEY);
 
 app.post('/webhooks/stripe', express.raw({type: 'application/json'}), (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(req.body, sig, import.meta.env.VITE_STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.log('Webhook signature verification failed.', err.message);
     return res.status(400).send('Webhook Error: ' + err.message);
@@ -389,7 +389,7 @@ export function useStripeElements(options: UseStripeElementsOptions = {}) {
 
   // This would integrate with @stripe/stripe-js if you want custom payment forms
   // const initializeStripe = useCallback(async () => {
-  //   const stripeInstance = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+  //   const stripeInstance = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY!);
   //   setStripe(stripeInstance);
   //   
   //   if (options.clientSecret && stripeInstance) {

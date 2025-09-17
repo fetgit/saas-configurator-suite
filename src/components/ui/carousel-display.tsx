@@ -27,29 +27,57 @@ export const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoplay);
 
+  // Debug des paramètres du carrousel
+  React.useEffect(() => {
+    console.log('🔍 CarouselDisplay - Paramètres reçus:', {
+      imagesCount: images?.length || 0,
+      autoplay,
+      interval,
+      showDots,
+      showArrows,
+      height,
+      isPlaying
+    });
+  }, [images, autoplay, interval, showDots, showArrows, height, isPlaying]);
+
   // Auto-play functionality
   useEffect(() => {
-    if (!isPlaying || images.length <= 1) return;
+    if (!isPlaying || images.length <= 1) {
+      console.log('🔍 CarouselDisplay - Auto-play désactivé:', { isPlaying, imagesLength: images.length });
+      return;
+    }
+
+    console.log('🔍 CarouselDisplay - Auto-play activé:', { interval, imagesLength: images.length });
 
     const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === images.length - 1 ? 0 : prevIndex + 1
-      );
+      setCurrentIndex((prevIndex) => {
+        const newIndex = prevIndex === images.length - 1 ? 0 : prevIndex + 1;
+        console.log('🔍 CarouselDisplay - Auto-play changement:', { from: prevIndex, to: newIndex });
+        return newIndex;
+      });
     }, interval);
 
-    return () => clearInterval(timer);
+    return () => {
+      console.log('🔍 CarouselDisplay - Auto-play arrêté');
+      clearInterval(timer);
+    };
   }, [isPlaying, interval, images.length]);
 
   const goToSlide = (index: number) => {
+    console.log('🔍 CarouselDisplay - Clic sur point de navigation:', { from: currentIndex, to: index });
     setCurrentIndex(index);
   };
 
   const goToPrevious = () => {
-    setCurrentIndex(currentIndex === 0 ? images.length - 1 : currentIndex - 1);
+    const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+    console.log('🔍 CarouselDisplay - Flèche précédente:', { from: currentIndex, to: newIndex });
+    setCurrentIndex(newIndex);
   };
 
   const goToNext = () => {
-    setCurrentIndex(currentIndex === images.length - 1 ? 0 : currentIndex + 1);
+    const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
+    console.log('🔍 CarouselDisplay - Flèche suivante:', { from: currentIndex, to: newIndex });
+    setCurrentIndex(newIndex);
   };
 
   if (!images || images.length === 0) {
@@ -152,7 +180,10 @@ export const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
             "absolute top-4 right-4",
             "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           )}
-          onClick={() => setIsPlaying(!isPlaying)}
+          onClick={() => {
+            console.log('🔍 CarouselDisplay - Bouton play/pause:', { from: isPlaying, to: !isPlaying });
+            setIsPlaying(!isPlaying);
+          }}
         >
           {isPlaying ? '⏸️' : '▶️'}
         </Button>

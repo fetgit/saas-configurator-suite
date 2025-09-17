@@ -102,20 +102,52 @@ export const MediaGallery: React.FC<{
   filterType?: 'image' | 'video' | 'all';
   gridCols?: number;
   className?: string;
+  showEmptyMessage?: boolean;
 }> = ({
   title = "Galerie",
   filterType = 'all',
   gridCols = 3,
-  className
+  className,
+  showEmptyMessage = true
 }) => {
-  const { mediaLibrary } = useMedia();
+  const { mediaLibrary, isLoading } = useMedia();
 
   const filteredMedia = mediaLibrary.filter(media => 
     filterType === 'all' || media.type === filterType
   );
 
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{title}</h2>
+        </div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm text-muted-foreground mt-2">Chargement des médias...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (filteredMedia.length === 0) {
-    return null;
+    if (!showEmptyMessage) {
+      return null;
+    }
+    
+    return (
+      <div className={className}>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{title}</h2>
+        </div>
+        <div className="text-center py-12">
+          <div className="text-muted-foreground">
+            <p className="text-lg mb-2">Aucun média trouvé</p>
+            <p className="text-sm">Les médias uploadés dans l'administration apparaîtront ici</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

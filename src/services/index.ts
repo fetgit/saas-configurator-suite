@@ -582,6 +582,9 @@ const services = {
 
 export default services;
 
+// Export apiClient for use in other services
+export { apiClient };
+
 // Individual exports for convenience
 export {
   AuthService as Auth,

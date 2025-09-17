@@ -21,7 +21,7 @@ interface ApiConfig {
 }
 
 const defaultConfig: ApiConfig = {
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || '/api',
+  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3003/api',
   timeout: 30000,
   retries: 3,
   retryDelay: 1000,
@@ -94,6 +94,11 @@ class ApiClient {
       },
     };
 
+    // Pour FormData, supprimer le Content-Type par défaut
+    if (config.body instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     // Apply request interceptors
     for (const interceptor of this.interceptors.request) {
       config = interceptor(config);
@@ -135,15 +140,46 @@ class ApiClient {
   }
 
   get<T = any>(endpoint: string, params?: ApiParams): Promise<ApiResponse<T>> {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
-    return this.request<T>(`${endpoint}${queryString}`, { method: 'GET' });
+    let url = endpoint;
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    return this.request<T>(url, { method: 'GET' });
   }
 
   post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+    const isFormData = data instanceof FormData;
+    console.log('🔍 useApi.post - Debug:', {
+      endpoint,
+      isFormData,
+      dataType: typeof data,
+      dataConstructor: data?.constructor?.name,
+      hasData: !!data
     });
+    
+    const config = {
+      method: 'POST',
+      body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
+      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+    };
+    
+    console.log('🔍 useApi.post - Config:', {
+      method: config.method,
+      hasBody: !!config.body,
+      headers: config.headers,
+      bodyType: config.body?.constructor?.name
+    });
+    
+    return this.request<T>(endpoint, config);
   }
 
   put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
@@ -173,13 +209,52 @@ export const apiClient = new ApiClient();
 
 // Auto-add auth token to requests
 apiClient.addRequestInterceptor((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
+  console.log('🔍 Intercepteur - Debug avant:', {
+    bodyType: config.body?.constructor?.name,
+    isFormData: config.body instanceof FormData,
+    headers: config.headers
+  });
+  
+  // Récupérer le token depuis auth_tokens (comme dans AuthService)
+  const storedTokens = localStorage.getItem('auth_tokens');
+  if (storedTokens) {
+    try {
+      const tokens = JSON.parse(storedTokens);
+      const token = tokens.accessToken;
+      
+      if (token) {
+        // Pour les FormData, ne pas définir Content-Type (le navigateur le fait automatiquement)
+        if (config.body instanceof FormData) {
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`,
+          };
+          console.log('🔍 Intercepteur - FormData détecté, headers:', config.headers);
+        } else {
+          // Seulement ajouter Content-Type si ce n'est pas déjà défini
+          const headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`,
+          };
+          
+          // Ajouter Content-Type seulement si pas déjà défini
+          if (!headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+          }
+          
+          config.headers = headers;
+          console.log('🔍 Intercepteur - Non-FormData, headers:', config.headers);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du token:', error);
+    }
   }
+  
+  console.log('🔍 Intercepteur - Debug après:', {
+    headers: config.headers
+  });
+  
   return config;
 });
 

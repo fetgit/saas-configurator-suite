@@ -4,6 +4,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Settings, User } from 'lucide-react';
 import {
@@ -21,7 +22,19 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ transparent = false }) => {
   const { t } = useLanguage();
   const { user, logout, isAuthenticated } = useAuth();
+  const { config } = useAppearance();
   const navigate = useNavigate();
+
+  // Debug du contexte Appearance
+  React.useEffect(() => {
+    console.log('🔍 Header - Contexte Appearance mis à jour:', {
+      companyName: config.branding.companyName,
+      logoUrl: config.branding.logoUrl,
+      faviconUrl: config.branding.faviconUrl,
+      logoId: config.branding.logoId,
+      faviconId: config.branding.faviconId
+    });
+  }, [config.branding]);
 
   const handleLogout = () => {
     logout();
@@ -40,9 +53,18 @@ export const Header: React.FC<HeaderProps> = ({ transparent = false }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
+            {config.branding.logoUrl ? (
+              <img 
+                src={config.branding.logoUrl} 
+                alt={config.branding.companyName}
+                className="w-8 h-8 rounded-lg object-contain"
+                crossOrigin="anonymous"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
+            )}
             <span className={`text-xl font-bold ${transparent ? 'text-white' : 'text-foreground'}`}>
-              SaaS Template
+              {config.branding.companyName}
             </span>
           </Link>
 

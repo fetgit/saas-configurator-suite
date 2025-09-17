@@ -384,17 +384,6 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
     });
   };
 
-  const renderMarkdownPreview = (content: string) => {
-    // Simple markdown to HTML conversion for preview
-    return content
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
-      .replace(/^\- (.*$)/gim, '<li>$1</li>')
-      .replace(/\n/gim, '<br/>');
-  };
 
   const getPageIcon = (type: string) => {
     switch (type) {
@@ -531,7 +520,7 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
                         </div>
                       </div>
                       
-                      <CardDescription>
+                      <div className="text-sm text-muted-foreground">
                         <div className="flex items-center justify-between">
                           <span>Dernière mise à jour : {new Date(page.lastUpdated).toLocaleDateString('fr-FR')}</span>
                           {lastSaved && editingPage === page.id && (
@@ -541,7 +530,7 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
                             </span>
                           )}
                         </div>
-                      </CardDescription>
+                      </div>
                     </CardHeader>
                     
                     <CardContent>
@@ -626,12 +615,27 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
                             <Label>Contenu de la page (Markdown)</Label>
                             {previewMode ? (
                               <div className="min-h-[400px] p-4 border rounded-lg bg-muted/50">
-                                <div 
-                                  className="prose prose-sm max-w-none"
-                                  dangerouslySetInnerHTML={{
-                                    __html: renderMarkdownPreview(pageContent.content)
-                                  }}
-                                />
+                                <div className="prose prose-sm max-w-none">
+                                  {pageContent.content.split('\n').map((line, index) => {
+                                    if (line.startsWith('# ')) {
+                                      return <h1 key={index} className="text-2xl font-bold mt-4 mb-2">{line.substring(2)}</h1>;
+                                    } else if (line.startsWith('## ')) {
+                                      return <h2 key={index} className="text-xl font-semibold mt-3 mb-2">{line.substring(3)}</h2>;
+                                    } else if (line.startsWith('### ')) {
+                                      return <h3 key={index} className="text-lg font-medium mt-2 mb-1">{line.substring(4)}</h3>;
+                                    } else if (line.startsWith('- ')) {
+                                      return <li key={index} className="ml-4">{line.substring(2)}</li>;
+                                    } else if (line.trim() === '') {
+                                      return <br key={index} />;
+                                    } else {
+                                      // Remplacer les éléments en gras et italique
+                                      const processedLine = line
+                                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+                                      return <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: processedLine }} />;
+                                    }
+                                  })}
+                                </div>
                               </div>
                             ) : (
                               <Textarea
@@ -677,11 +681,20 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
                             <div className="bg-muted/50 p-4 rounded-lg">
                               <p className="text-sm text-muted-foreground mb-2">Aperçu du contenu :</p>
                               <div className="max-h-32 overflow-y-auto">
-                                {page.content.split('\n').slice(0, 5).map((line, index) => (
-                                  <p key={index} className="text-sm mb-1">
-                                    {line.length > 100 ? line.substring(0, 100) + '...' : line}
-                                  </p>
-                                ))}
+                                {page.content.split('\n').slice(0, 5).map((line, index) => {
+                                  const displayLine = line.length > 100 ? line.substring(0, 100) + '...' : line;
+                                  if (line.startsWith('# ')) {
+                                    return <h1 key={index} className="text-sm font-bold mb-1">{displayLine.substring(2)}</h1>;
+                                  } else if (line.startsWith('## ')) {
+                                    return <h2 key={index} className="text-sm font-semibold mb-1">{displayLine.substring(3)}</h2>;
+                                  } else if (line.startsWith('### ')) {
+                                    return <h3 key={index} className="text-sm font-medium mb-1">{displayLine.substring(4)}</h3>;
+                                  } else if (line.startsWith('- ')) {
+                                    return <li key={index} className="text-sm mb-1 ml-4">{displayLine.substring(2)}</li>;
+                                  } else {
+                                    return <p key={index} className="text-sm mb-1">{displayLine}</p>;
+                                  }
+                                })}
                               </div>
                             </div>
                           </div>

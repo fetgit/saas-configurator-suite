@@ -151,7 +151,7 @@ export class PerformanceService {
     const { width, height, quality = 80, format = 'webp' } = options;
     
     // En production, utiliser un service d'optimisation d'images
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       const params = new URLSearchParams();
       if (width) params.append('w', width.toString());
       if (height) params.append('h', height.toString());

@@ -13,6 +13,7 @@ import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { MediaProvider } from "@/contexts/MediaContext";
 import { AppearanceProvider } from "@/contexts/AppearanceContext";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { DynamicHead } from "@/components/DynamicHead";
 import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -36,10 +37,14 @@ const AdminSettings = React.lazy(() => import("./pages/admin/AdminSettings").the
 const AdminSystem = React.lazy(() => import("./pages/admin/AdminSystem"));
 const AdminPerformance = React.lazy(() => import("./pages/admin/AdminPerformance").then(module => ({ default: module.AdminPerformance })));
 const AdminSecurityIntegrated = React.lazy(() => import("./pages/admin/AdminSecurityIntegrated").then(module => ({ default: module.AdminSecurityIntegrated })));
+const AdminPricing = React.lazy(() => import("./pages/admin/AdminPricing").then(module => ({ default: module.AdminPricing })));
 
 // Lazy loading pour les pages publiques
 const MediaShowcase = React.lazy(() => import("./pages/MediaShowcase").then(module => ({ default: module.MediaShowcase })));
 const CommunityDashboard = React.lazy(() => import("./pages/community/CommunityDashboard").then(module => ({ default: module.CommunityDashboard })));
+const Pricing = React.lazy(() => import("./pages/Pricing").then(module => ({ default: module.Pricing })));
+const Features = React.lazy(() => import("./pages/Features").then(module => ({ default: module.Features })));
+const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 
 // Lazy loading pour les pages légales
 const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy").then(module => ({ default: module.PrivacyPolicy })));
@@ -68,6 +73,7 @@ const App = () => (
                 <ChatbotProvider>
                   <MediaProvider>
                   <TooltipProvider>
+                  <DynamicHead />
                   <Toaster />
                   <Sonner />
                   <BrowserRouter
@@ -84,8 +90,11 @@ const App = () => (
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/contact" element={<Contact />} />
+                      <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/features" element={<Features />} />
                       
                       {/* Pages d'administration */}
+                      <Route path="/admin" element={<AdminDashboard />} />
                       <Route path="/admin/users" element={<AdminUsers />} />
                       <Route path="/admin/settings" element={<AdminSettings />} />
                       <Route path="/admin/database" element={<AdminDatabase />} />
@@ -117,6 +126,9 @@ const App = () => (
                       
                       {/* Page de sécurité intégrée */}
                       <Route path="/admin/security-integrated" element={<AdminSecurityIntegrated />} />
+                      
+                      {/* Page de gestion des tarifs */}
+                      <Route path="/admin/pricing" element={<AdminPricing />} />
                       
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />

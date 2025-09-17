@@ -27,7 +27,8 @@ import {
   Mail,
   MessageCircle,
   UserCheck,
-  Zap
+  Zap,
+  DollarSign
 } from 'lucide-react';
 
 export function AdminSidebar() {
@@ -44,6 +45,7 @@ export function AdminSidebar() {
   // Menu items selon le niveau d'accès
   const adminItems = [
     { title: t('admin.users'), url: '/admin/users', icon: Users },
+    { title: 'Gestion des tarifs', url: '/admin/pricing', icon: DollarSign },
     { title: t('admin.settings'), url: '/admin/settings', icon: Settings },
     { title: 'Communauté', url: '/admin/community', icon: UserCheck },
     { title: 'Mailing', url: '/admin/mailing', icon: Mail },

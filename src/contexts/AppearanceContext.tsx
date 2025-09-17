@@ -4,6 +4,7 @@ export interface HeroConfig {
   showHero: boolean;
   backgroundType: 'color' | 'image';
   backgroundImage: string;
+  backgroundImageId?: number; // ID de l'image uploadée
   backgroundColor: string;
   layout: 'centered' | 'left' | 'right';
 }
@@ -35,7 +36,9 @@ export interface AppearanceConfig {
   branding: {
     companyName: string;
     logoUrl: string;
+    logoId?: number; // ID de l'image uploadée
     faviconUrl: string;
+    faviconId?: number; // ID de l'image uploadée
     heroTitle: string;
     heroSubtitle: string;
   };
@@ -108,13 +111,39 @@ export const AppearanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   });
 
+  // Fonction pour nettoyer les URLs blob invalides
+  const cleanBlobUrls = (config: any) => {
+    const cleaned = { ...config };
+    
+    // Nettoyer les URLs blob dans branding
+    if (cleaned.branding) {
+      if (cleaned.branding.logoUrl && cleaned.branding.logoUrl.startsWith('blob:')) {
+        cleaned.branding.logoUrl = '';
+        cleaned.branding.logoId = undefined;
+      }
+      if (cleaned.branding.faviconUrl && cleaned.branding.faviconUrl.startsWith('blob:')) {
+        cleaned.branding.faviconUrl = '';
+        cleaned.branding.faviconId = undefined;
+      }
+    }
+    
+    // Nettoyer les URLs blob dans heroConfig
+    if (cleaned.heroConfig && cleaned.heroConfig.backgroundImage && cleaned.heroConfig.backgroundImage.startsWith('blob:')) {
+      cleaned.heroConfig.backgroundImage = '';
+      cleaned.heroConfig.backgroundImageId = undefined;
+    }
+    
+    return cleaned;
+  };
+
   // Load config from localStorage on mount
   useEffect(() => {
     const savedConfig = localStorage.getItem('appearanceConfig');
     if (savedConfig) {
       try {
         const parsedConfig = JSON.parse(savedConfig);
-        setConfig(prev => ({ ...prev, ...parsedConfig }));
+        const cleanedConfig = cleanBlobUrls(parsedConfig);
+        setConfig(prev => ({ ...prev, ...cleanedConfig }));
       } catch (error) {
         console.error('Error loading appearance config:', error);
       }
@@ -159,10 +188,15 @@ export const AppearanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   const updateBranding = useCallback((branding: Partial<AppearanceConfig['branding']>) => {
-    setConfig(prev => ({
-      ...prev,
-      branding: { ...prev.branding, ...branding }
-    }));
+    console.log('🔍 AppearanceContext - updateBranding appelé:', branding);
+    setConfig(prev => {
+      const newConfig = {
+        ...prev,
+        branding: { ...prev.branding, ...branding }
+      };
+      console.log('🔍 AppearanceContext - Nouveau branding:', newConfig.branding);
+      return newConfig;
+    });
   }, []);
 
   const updateLayout = useCallback((layout: Partial<AppearanceConfig['layout']>) => {
