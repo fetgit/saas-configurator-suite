@@ -28,7 +28,8 @@ import {
   MessageCircle,
   UserCheck,
   Zap,
-  DollarSign
+  DollarSign,
+  Star
 } from 'lucide-react';
 
 export function AdminSidebar() {

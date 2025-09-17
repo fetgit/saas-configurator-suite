@@ -43,7 +43,6 @@ const AdminPricing = React.lazy(() => import("./pages/admin/AdminPricing").then(
 const MediaShowcase = React.lazy(() => import("./pages/MediaShowcase").then(module => ({ default: module.MediaShowcase })));
 const CommunityDashboard = React.lazy(() => import("./pages/community/CommunityDashboard").then(module => ({ default: module.CommunityDashboard })));
 const Pricing = React.lazy(() => import("./pages/Pricing").then(module => ({ default: module.Pricing })));
-const Features = React.lazy(() => import("./pages/Features").then(module => ({ default: module.Features })));
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 
 // Lazy loading pour les pages légales
@@ -67,11 +66,11 @@ const App = () => (
     <LanguageProvider>
       <LegalProvider>
         <AuthProvider>
-          <AppearanceProvider>
-            <CommunityProvider>
-              <MailingProvider>
-                <ChatbotProvider>
-                  <MediaProvider>
+            <AppearanceProvider>
+              <CommunityProvider>
+                <MailingProvider>
+                  <ChatbotProvider>
+                    <MediaProvider>
                   <TooltipProvider>
                   <DynamicHead />
                   <Toaster />
@@ -91,7 +90,6 @@ const App = () => (
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/pricing" element={<Pricing />} />
-                      <Route path="/features" element={<Features />} />
                       
                       {/* Pages d'administration */}
                       <Route path="/admin" element={<AdminDashboard />} />
@@ -137,11 +135,11 @@ const App = () => (
                     <ChatbotWidget />
                   </BrowserRouter>
                 </TooltipProvider>
-                </MediaProvider>
-              </ChatbotProvider>
-            </MailingProvider>
-          </CommunityProvider>
-        </AppearanceProvider>
+                    </MediaProvider>
+                  </ChatbotProvider>
+                </MailingProvider>
+              </CommunityProvider>
+          </AppearanceProvider>
       </AuthProvider>
     </LegalProvider>
   </LanguageProvider>

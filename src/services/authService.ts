@@ -188,6 +188,9 @@ export class AuthService {
       
       // Vérifier l'expiration
       if (decodedPayload.exp < Math.floor(Date.now() / 1000)) {
+        console.log('🔄 Token JWT expiré, nettoyage des tokens stockés...');
+        // Nettoyer automatiquement les tokens expirés
+        await this.clearStoredTokens();
         throw new Error('Token JWT expiré');
       }
 
@@ -418,8 +421,8 @@ export class AuthService {
     }
   }
 
-  // Déconnexion
-  static async logout(): Promise<void> {
+  // Nettoyer les tokens stockés
+  static async clearStoredTokens(): Promise<void> {
     try {
       // Supprimer les tokens du stockage
       localStorage.removeItem(this.TOKEN_STORAGE_KEY);
@@ -429,6 +432,18 @@ export class AuthService {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('auth_tokens');
+      
+      console.log('✅ Tokens supprimés du stockage local');
+    } catch (error) {
+      console.error('Erreur lors de la suppression des tokens:', error);
+    }
+  }
+
+  // Déconnexion
+  static async logout(): Promise<void> {
+    try {
+      // Utiliser la méthode clearStoredTokens
+      await this.clearStoredTokens();
       
       // Forcer la vérification que les tokens sont bien supprimés
       const tokensAfterLogout = await this.getStoredTokens();
@@ -515,9 +530,16 @@ export class AuthService {
       }
 
       const payload = await this.verifyJWT(tokens.accessToken);
-      return payload !== null;
+      if (payload === null) {
+        // Token expiré ou invalide, nettoyer les tokens
+        await this.clearStoredTokens();
+        return false;
+      }
+      return true;
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'authentification:', error);
+      // En cas d'erreur, nettoyer les tokens
+      await this.clearStoredTokens();
       return false;
     }
   }

@@ -15,6 +15,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const StripeService = require('./services/stripeService');
+const AppearanceConfigService = require('./services/appearanceConfigService');
 
 // Charger le fichier de configuration
 require('dotenv').config({ path: path.join(__dirname, 'config.env') });
@@ -3163,6 +3164,166 @@ app.post('/api/media/upload', authenticateToken, requireRole(['admin', 'superadm
     res.status(500).json({ error: 'Erreur lors de l\'upload de l\'image' });
   }
 });
+
+// ===================================================================
+// ROUTES POUR LES CONFIGURATIONS D'APPARENCE
+// ===================================================================
+
+// Récupérer la configuration globale (publique)
+app.get('/api/appearance/global-config', async (req, res) => {
+  try {
+    console.log('🔍 Route /api/appearance/global-config appelée');
+    const result = await AppearanceConfigService.getGlobalConfig();
+    console.log('🔍 Résultat du service:', result);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        config: result.config
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la config globale:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération de la configuration globale'
+    });
+  }
+});
+
+// Récupérer la configuration d'apparence
+app.get('/api/appearance/config', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const result = await AppearanceConfigService.getUserConfig(userId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        config: result.config
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération de la configuration'
+    });
+  }
+});
+
+// Sauvegarder la configuration d'apparence
+app.post('/api/appearance/config', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const configData = req.body;
+    
+    // Vérifier si l'utilisateur est admin pour la config globale
+    const userResult = await pool.query(
+      'SELECT role FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    const isAdmin = userResult.rows.length > 0 && ['admin', 'superadmin'].includes(userResult.rows[0].role);
+    
+    let result;
+    if (isAdmin) {
+      result = await AppearanceConfigService.saveGlobalConfig(configData, userId);
+    } else {
+      result = await AppearanceConfigService.saveUserConfig(userId, configData);
+    }
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        configId: result.configId
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde de la config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la sauvegarde de la configuration'
+    });
+  }
+});
+
+// Migrer depuis localStorage vers la base de données
+app.post('/api/appearance/migrate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const localStorageConfig = req.body;
+    
+    const result = await AppearanceConfigService.migrateFromLocalStorage(userId, localStorageConfig);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        configId: result.configId
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la migration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la migration de la configuration'
+    });
+  }
+});
+
+// Récupérer l'historique des configurations
+app.get('/api/appearance/history', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { limit = 10 } = req.query;
+    
+    const result = await AppearanceConfigService.getConfigHistory(userId, parseInt(limit));
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        history: result.history
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'historique:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération de l\'historique'
+    });
+  }
+});
+
+// ===================================================================
+// ROUTES POUR LES MÉDIAS
+// ===================================================================
 
 // Récupérer la liste des images uploadées
 app.get('/api/media/list', authenticateToken, requireRole(['admin', 'superadmin']), async (req, res) => {

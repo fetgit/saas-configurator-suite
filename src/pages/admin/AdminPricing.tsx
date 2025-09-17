@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { 
   Plus, 
   Edit, 
@@ -45,6 +46,7 @@ import { AdminPricingService } from '@/services/adminPricingService';
 export const AdminPricing = () => {
   const { user, isAuthenticated } = useAuth();
   const { t } = useLanguage();
+  const { config, updateConfig } = useAppearance();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -298,156 +300,993 @@ export const AdminPricing = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="plans">Plans d'abonnement</TabsTrigger>
+            <TabsTrigger value="cards">Gestion des cartes</TabsTrigger>
+            <TabsTrigger value="content">Contenu</TabsTrigger>
+            <TabsTrigger value="display">Affichage</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="settings">Paramètres</TabsTrigger>
           </TabsList>
 
           {/* Plans d'abonnement */}
           <TabsContent value="plans" className="space-y-6">
-            <div className="grid gap-6">
-              {plans.map((plan) => (
-                <Card key={plan.id} className="shadow-medium border-0">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            {plan.name}
-                            <Badge className={getTierColor(plan.tier)}>
-                              {getTierLabel(plan.tier)}
-                            </Badge>
-                            {!plan.is_active && (
-                              <Badge variant="secondary">Inactif</Badge>
-                            )}
-                          </CardTitle>
-                          <CardDescription className="mt-1">
-                            {plan.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">
-                            {formatPrice(plan.price_monthly)}€
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            / mois
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingPlan(plan);
-                              setIsEditDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => togglePlanStatus(plan.id, !plan.is_active)}
-                          >
-                            {plan.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePlan(plan.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Prix */}
-                      <div>
-                        <h4 className="font-semibold mb-3">Tarification</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span>Mensuel:</span>
-                            <span className="font-medium">{formatPrice(plan.price_monthly)}€</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Annuel:</span>
-                            <span className="font-medium">{formatPrice(plan.price_yearly)}€</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Période d'essai:</span>
-                            <span className="font-medium">{plan.trial_days} jours</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Fonctionnalités */}
-                      <div>
-                        <h4 className="font-semibold mb-3">Fonctionnalités</h4>
-                        <div className="space-y-1">
-                          {plan.features.slice(0, 5).map((feature, index) => (
-                            <div key={index} className="flex items-center gap-2 text-sm">
-                              <CheckCircle className="h-4 w-4 text-success" />
-                              <span>{feature.name}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle>Plans d'abonnement</CardTitle>
+                <CardDescription>
+                  Gérez les plans d'abonnement et leurs fonctionnalités
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6">
+                  {(config.pricingConfig?.plans || []).map((plan, index) => (
+                    <Card key={plan.id} className="shadow-medium border-0">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <CardTitle className="flex items-center gap-2">
+                                {plan.name}
+                                {plan.popular && (
+                                  <Badge className="bg-primary text-white">
+                                    Populaire
+                                  </Badge>
+                                )}
+                                {plan.highlighted && (
+                                  <Badge variant="secondary">
+                                    Mis en avant
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                              <CardDescription className="mt-1">
+                                {plan.description}
+                              </CardDescription>
                             </div>
-                          ))}
-                          {plan.features.length > 5 && (
-                            <div className="text-sm text-muted-foreground">
-                              +{plan.features.length - 5} autres fonctionnalités
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <div className="text-2xl font-bold">
+                                {plan.price}{plan.currency}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                / {plan.period === 'monthly' ? 'mois' : 'an'}
+                              </div>
                             </div>
-                          )}
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  // Ouvrir l'onglet "Gestion des cartes" pour éditer
+                                  setActiveTab('cards');
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Limites */}
-                    <div className="mt-6">
-                      <h4 className="font-semibold mb-3">Limites</h4>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {plan.limits.users || 'Illimité'} utilisateurs
-                          </span>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-semibold mb-3">Fonctionnalités incluses</h4>
+                            <ul className="space-y-2">
+                              {plan.features?.slice(0, 5).map((feature, featureIndex) => (
+                                <li key={featureIndex} className="flex items-center gap-2">
+                                  {feature.included ? (
+                                    <CheckCircle className="h-4 w-4 text-success" />
+                                  ) : (
+                                    <Lock className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <span className={`text-sm ${feature.included ? '' : 'text-muted-foreground opacity-60'}`}>
+                                    {feature.text}
+                                  </span>
+                                </li>
+                              ))}
+                              {plan.features?.length > 5 && (
+                                <li className="text-sm text-muted-foreground">
+                                  +{plan.features.length - 5} autres fonctionnalités
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-3">Actions</h4>
+                            <div className="space-y-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setActiveTab('cards')}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modifier le plan
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                  updatedPlans[index] = { ...plan, popular: !plan.popular };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      plans: updatedPlans
+                                    }
+                                  });
+                                }}
+                              >
+                                {plan.popular ? 'Retirer "Populaire"' : 'Marquer "Populaire"'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                  updatedPlans[index] = { ...plan, highlighted: !plan.highlighted };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      plans: updatedPlans
+                                    }
+                                  });
+                                }}
+                              >
+                                {plan.highlighted ? 'Retirer la mise en avant' : 'Mettre en avant'}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {plan.limits.storage || 'Illimité'} GB stockage
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {plan.limits.api_calls || 'Illimité'} appels API
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {plans.length === 0 && (
-                <Card className="shadow-medium border-0">
-                  <CardContent className="p-12 text-center">
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                {(!config.pricingConfig?.plans || config.pricingConfig.plans.length === 0) && (
+                  <div className="text-center py-8">
                     <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Aucun plan configuré</h3>
                     <p className="text-muted-foreground mb-4">
-                      Commencez par créer votre premier plan d'abonnement
+                      Commencez par configurer vos plans d'abonnement
                     </p>
-                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Button onClick={() => setActiveTab('cards')}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Créer un plan
+                      Configurer les plans
                     </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Gestion des cartes */}
+          <TabsContent value="cards" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestion des cartes de tarifs</CardTitle>
+                <CardDescription>
+                  Configurez les cartes de tarifs affichées sur la page et la section tarifs
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  {config.pricingConfig?.plans?.map((plan, index) => (
+                    <Card key={plan.id} className="border-2">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <CardTitle className="text-lg">{plan.name}</CardTitle>
+                              <CardDescription>{plan.description}</CardDescription>
+                            </div>
+                            {plan.popular && (
+                              <Badge variant="default" className="bg-primary">
+                                Populaire
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={plan.highlighted}
+                              onCheckedChange={(highlighted) => {
+                                const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                updatedPlans[index] = { ...plan, highlighted };
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">Mettre en avant</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updatedPlans = (config.pricingConfig?.plans || []).filter((_, i) => i !== index);
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`plan-name-${plan.id}`}>Nom du plan</Label>
+                            <Input
+                              id={`plan-name-${plan.id}`}
+                              value={plan.name}
+                              onChange={(e) => {
+                                const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                updatedPlans[index] = { ...plan, name: e.target.value };
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`plan-price-${plan.id}`}>Prix</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id={`plan-price-${plan.id}`}
+                                type="number"
+                                value={plan.price}
+                                onChange={(e) => {
+                                  const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                  updatedPlans[index] = { ...plan, price: parseInt(e.target.value) || 0 };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      plans: updatedPlans
+                                    }
+                                  });
+                                }}
+                                className="flex-1"
+                              />
+                              <Select
+                                value={plan.currency}
+                                onValueChange={(currency) => {
+                                  const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                  updatedPlans[index] = { ...plan, currency };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      plans: updatedPlans
+                                    }
+                                  });
+                                }}
+                              >
+                                <SelectTrigger className="w-20">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="€">€</SelectItem>
+                                  <SelectItem value="$">$</SelectItem>
+                                  <SelectItem value="£">£</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`plan-description-${plan.id}`}>Description</Label>
+                          <Textarea
+                            id={`plan-description-${plan.id}`}
+                            value={plan.description || ""}
+                            onChange={(e) => {
+                              const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                              updatedPlans[index] = { ...plan, description: e.target.value };
+                              updateConfig({
+                                pricingConfig: {
+                                  ...config.pricingConfig,
+                                  plans: updatedPlans
+                                }
+                              });
+                            }}
+                            rows={2}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Fonctionnalités</Label>
+                          <div className="space-y-2">
+                            {plan.features.map((feature, featureIndex) => (
+                              <div key={featureIndex} className="flex items-center gap-2">
+                                <Switch
+                                  checked={feature.included}
+                                  onCheckedChange={(included) => {
+                                    const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                    const updatedFeatures = [...plan.features];
+                                    updatedFeatures[featureIndex] = { ...feature, included };
+                                    updatedPlans[index] = { ...plan, features: updatedFeatures };
+                                    updateConfig({
+                                      pricingConfig: {
+                                        ...config.pricingConfig,
+                                        plans: updatedPlans
+                                      }
+                                    });
+                                  }}
+                                />
+                                <Input
+                                  value={feature.text}
+                                  onChange={(e) => {
+                                    const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                    const updatedFeatures = [...plan.features];
+                                    updatedFeatures[featureIndex] = { ...feature, text: e.target.value };
+                                    updatedPlans[index] = { ...plan, features: updatedFeatures };
+                                    updateConfig({
+                                      pricingConfig: {
+                                        ...config.pricingConfig,
+                                        plans: updatedPlans
+                                      }
+                                    });
+                                  }}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                    const updatedFeatures = plan.features.filter((_, i) => i !== featureIndex);
+                                    updatedPlans[index] = { ...plan, features: updatedFeatures };
+                                    updateConfig({
+                                      pricingConfig: {
+                                        ...config.pricingConfig,
+                                        plans: updatedPlans
+                                      }
+                                    });
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                const updatedFeatures = [...plan.features, { text: "Nouvelle fonctionnalité", included: true }];
+                                updatedPlans[index] = { ...plan, features: updatedFeatures };
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Ajouter une fonctionnalité
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`plan-cta-${plan.id}`}>Texte du bouton</Label>
+                            <Input
+                              id={`plan-cta-${plan.id}`}
+                              value={plan.ctaText}
+                              onChange={(e) => {
+                                const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                updatedPlans[index] = { ...plan, ctaText: e.target.value };
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`plan-link-${plan.id}`}>Lien du bouton</Label>
+                            <Input
+                              id={`plan-link-${plan.id}`}
+                              value={plan.ctaLink || ""}
+                              onChange={(e) => {
+                                const updatedPlans = [...(config.pricingConfig?.plans || [])];
+                                updatedPlans[index] = { ...plan, ctaLink: e.target.value };
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    plans: updatedPlans
+                                  }
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                {/* Bouton pour ajouter un nouveau plan */}
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newPlan = {
+                        id: `plan-${Date.now()}`,
+                        name: 'Nouveau Plan',
+                        price: 0,
+                        currency: '€',
+                        period: 'monthly' as const,
+                        description: 'Description du nouveau plan',
+                        features: [
+                          { text: 'Fonctionnalité 1', included: true },
+                          { text: 'Fonctionnalité 2', included: true }
+                        ],
+                        ctaText: 'Commencer',
+                        ctaLink: '/signup',
+                        highlighted: false,
+                        popular: false
+                      };
+                      
+                      const updatedPlans = [...(config.pricingConfig?.plans || []), newPlan];
+                      updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          plans: updatedPlans
+                        }
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un nouveau plan
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Contenu */}
+          <TabsContent value="content" className="space-y-6">
+            {/* Section Fonctionnalités */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Section Fonctionnalités</CardTitle>
+                <CardDescription>
+                  Configurez la section "Fonctionnalités incluses dans tous les plans"
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium">Afficher la section Fonctionnalités</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Contrôlez l'affichage de la section fonctionnalités sur la page tarifs
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.pricingConfig?.showFeaturesSection !== false}
+                    onCheckedChange={(show) => updateConfig({
+                      pricingConfig: {
+                        ...config.pricingConfig,
+                        showFeaturesSection: show
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="features-title">Titre de la section</Label>
+                    <Input
+                      id="features-title"
+                      value={config.pricingConfig?.featuresTitle || "Fonctionnalités incluses dans tous les plans"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          featuresTitle: e.target.value
+                        }
+                      })}
+                      placeholder="Titre de la section fonctionnalités"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="features-description">Description</Label>
+                    <Textarea
+                      id="features-description"
+                      value={config.pricingConfig?.featuresDescription || "Tous nos plans incluent ces fonctionnalités essentielles"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          featuresDescription: e.target.value
+                        }
+                      })}
+                      placeholder="Description de la section fonctionnalités"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Fonctionnalités</h3>
+                  <div className="space-y-4">
+                    {(config.pricingConfig?.features || []).map((feature, index) => (
+                      <Card key={index} className="border-2">
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`feature-icon-${index}`}>Icône</Label>
+                              <Select
+                                value={feature.icon}
+                                onValueChange={(icon) => {
+                                  const updatedFeatures = [...(config.pricingConfig?.features || [])];
+                                  updatedFeatures[index] = { ...feature, icon };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      features: updatedFeatures
+                                    }
+                                  });
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Shield">Shield</SelectItem>
+                                  <SelectItem value="Zap">Zap</SelectItem>
+                                  <SelectItem value="Users">Users</SelectItem>
+                                  <SelectItem value="Database">Database</SelectItem>
+                                  <SelectItem value="Globe">Globe</SelectItem>
+                                  <SelectItem value="Headphones">Headphones</SelectItem>
+                                  <SelectItem value="Lock">Lock</SelectItem>
+                                  <SelectItem value="CheckCircle">CheckCircle</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`feature-title-${index}`}>Titre</Label>
+                              <Input
+                                id={`feature-title-${index}`}
+                                value={feature.title}
+                                onChange={(e) => {
+                                  const updatedFeatures = [...(config.pricingConfig?.features || [])];
+                                  updatedFeatures[index] = { ...feature, title: e.target.value };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      features: updatedFeatures
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`feature-description-${index}`}>Description</Label>
+                              <Input
+                                id={`feature-description-${index}`}
+                                value={feature.description}
+                                onChange={(e) => {
+                                  const updatedFeatures = [...(config.pricingConfig?.features || [])];
+                                  updatedFeatures[index] = { ...feature, description: e.target.value };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      features: updatedFeatures
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end mt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updatedFeatures = (config.pricingConfig?.features || []).filter((_, i) => i !== index);
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    features: updatedFeatures
+                                  }
+                                });
+                              }}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newFeature = {
+                        icon: "Shield",
+                        title: "Nouvelle fonctionnalité",
+                        description: "Description de la nouvelle fonctionnalité"
+                      };
+                      const updatedFeatures = [...(config.pricingConfig?.features || []), newFeature];
+                      updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          features: updatedFeatures
+                        }
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une fonctionnalité
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section FAQ */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Section Questions Fréquentes</CardTitle>
+                <CardDescription>
+                  Configurez la section FAQ de la page tarifs
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium">Afficher la section FAQ</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Contrôlez l'affichage de la section questions fréquentes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.pricingConfig?.showFAQSection !== false}
+                    onCheckedChange={(show) => updateConfig({
+                      pricingConfig: {
+                        ...config.pricingConfig,
+                        showFAQSection: show
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="faq-title">Titre de la section</Label>
+                    <Input
+                      id="faq-title"
+                      value={config.pricingConfig?.faqTitle || "Questions fréquentes"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          faqTitle: e.target.value
+                        }
+                      })}
+                      placeholder="Titre de la section FAQ"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Questions et Réponses</h3>
+                  <div className="space-y-4">
+                    {(config.pricingConfig?.faqs || []).map((faq, index) => (
+                      <Card key={index} className="border-2">
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`faq-question-${index}`}>Question</Label>
+                              <Input
+                                id={`faq-question-${index}`}
+                                value={faq.question}
+                                onChange={(e) => {
+                                  const updatedFAQs = [...(config.pricingConfig?.faqs || [])];
+                                  updatedFAQs[index] = { ...faq, question: e.target.value };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      faqs: updatedFAQs
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`faq-answer-${index}`}>Réponse</Label>
+                              <Textarea
+                                id={`faq-answer-${index}`}
+                                value={faq.answer}
+                                onChange={(e) => {
+                                  const updatedFAQs = [...(config.pricingConfig?.faqs || [])];
+                                  updatedFAQs[index] = { ...faq, answer: e.target.value };
+                                  updateConfig({
+                                    pricingConfig: {
+                                      ...config.pricingConfig,
+                                      faqs: updatedFAQs
+                                    }
+                                  });
+                                }}
+                                rows={3}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end mt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updatedFAQs = (config.pricingConfig?.faqs || []).filter((_, i) => i !== index);
+                                updateConfig({
+                                  pricingConfig: {
+                                    ...config.pricingConfig,
+                                    faqs: updatedFAQs
+                                  }
+                                });
+                              }}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newFAQ = {
+                        question: "Nouvelle question ?",
+                        answer: "Réponse à la nouvelle question."
+                      };
+                      const updatedFAQs = [...(config.pricingConfig?.faqs || []), newFAQ];
+                      updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          faqs: updatedFAQs
+                        }
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une question
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section CTA Final */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Section CTA Final</CardTitle>
+                <CardDescription>
+                  Configurez la section d'appel à l'action finale
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium">Afficher la section CTA Final</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Contrôlez l'affichage de la section d'appel à l'action finale
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.pricingConfig?.showFinalCTA !== false}
+                    onCheckedChange={(show) => updateConfig({
+                      pricingConfig: {
+                        ...config.pricingConfig,
+                        showFinalCTA: show
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="final-cta-title">Titre</Label>
+                    <Input
+                      id="final-cta-title"
+                      value={config.pricingConfig?.finalCTATitle || "Prêt à commencer ?"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          finalCTATitle: e.target.value
+                        }
+                      })}
+                      placeholder="Titre de la section CTA"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="final-cta-description">Description</Label>
+                    <Textarea
+                      id="final-cta-description"
+                      value={config.pricingConfig?.finalCTADescription || "Rejoignez des milliers d'entreprises qui font confiance à notre solution."}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          finalCTADescription: e.target.value
+                        }
+                      })}
+                      placeholder="Description de la section CTA"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="final-cta-primary">Texte du bouton principal</Label>
+                      <Input
+                        id="final-cta-primary"
+                        value={config.pricingConfig?.finalCTAPrimary || "Commencer l'essai gratuit"}
+                        onChange={(e) => updateConfig({
+                          pricingConfig: {
+                            ...config.pricingConfig,
+                            finalCTAPrimary: e.target.value
+                          }
+                        })}
+                        placeholder="Texte du bouton principal"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="final-cta-secondary">Texte du bouton secondaire</Label>
+                      <Input
+                        id="final-cta-secondary"
+                        value={config.pricingConfig?.finalCTASecondary || "Nous contacter"}
+                        onChange={(e) => updateConfig({
+                          pricingConfig: {
+                            ...config.pricingConfig,
+                            finalCTASecondary: e.target.value
+                          }
+                        })}
+                        placeholder="Texte du bouton secondaire"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Affichage */}
+          <TabsContent value="display" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuration de l'affichage des tarifs</CardTitle>
+                <CardDescription>
+                  Contrôlez l'affichage de la page tarifs et de la section tarifs sur la homepage
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Contrôles de visibilité */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Afficher la page Tarifs</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Contrôlez si la page /pricing est accessible
+                      </p>
+                    </div>
+                    <Switch
+                      checked={config.pricingConfig?.showPricingPage !== false}
+                      onCheckedChange={(show) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          showPricingPage: show
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Afficher la section Tarifs sur la homepage</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Contrôlez si la section tarifs apparaît sur la homepage
+                      </p>
+                    </div>
+                    <Switch
+                      checked={config.pricingConfig?.showPricingSection !== false}
+                      onCheckedChange={(show) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          showPricingSection: show
+                        }
+                      })}
+                    />
+                  </div>
+                </div>
+
+                {/* Configuration des textes */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Textes de la section tarifs</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="pricing-title">Titre de la section</Label>
+                    <Input
+                      id="pricing-title"
+                      value={config.pricingConfig?.title || "Tarifs transparents"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          title: e.target.value
+                        }
+                      })}
+                      placeholder="Titre de la section tarifs"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="pricing-description">Description</Label>
+                    <Textarea
+                      id="pricing-description"
+                      value={config.pricingConfig?.description || "Choisissez le plan qui correspond à vos besoins"}
+                      onChange={(e) => updateConfig({
+                        pricingConfig: {
+                          ...config.pricingConfig,
+                          description: e.target.value
+                        }
+                      })}
+                      placeholder="Description de la section tarifs"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pricing-cta-primary">Texte du bouton principal</Label>
+                      <Input
+                        id="pricing-cta-primary"
+                        value={config.pricingConfig?.ctaText || "Commencer l'essai gratuit"}
+                        onChange={(e) => updateConfig({
+                          pricingConfig: {
+                            ...config.pricingConfig,
+                            ctaText: e.target.value
+                          }
+                        })}
+                        placeholder="Texte du bouton principal"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="pricing-cta-secondary">Texte du bouton secondaire</Label>
+                      <Input
+                        id="pricing-cta-secondary"
+                        value={config.pricingConfig?.ctaSecondary || "Voir tous les plans"}
+                        onChange={(e) => updateConfig({
+                          pricingConfig: {
+                            ...config.pricingConfig,
+                            ctaSecondary: e.target.value
+                          }
+                        })}
+                        placeholder="Texte du bouton secondaire"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Analytics */}

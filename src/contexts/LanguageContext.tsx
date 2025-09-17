@@ -67,6 +67,7 @@ const defaultTranslations: Translations = {
 
   // Admin Appearance
   'admin.appearance.title': { fr: 'Personnalisation de l\'interface', en: 'Interface Customization', es: 'Personalización de la interfaz', it: 'Personalizzazione dell\'interfaccia' },
+  'admin.appearance.description': { fr: 'Personnalisez l\'apparence de votre application SaaS', en: 'Customize the appearance of your SaaS application', es: 'Personaliza la apariencia de tu aplicación SaaS', it: 'Personalizza l\'aspetto della tua applicazione SaaS' },
   'admin.appearance.subtitle': { fr: 'Personnalisez l\'apparence de votre application SaaS', en: 'Customize the appearance of your SaaS application', es: 'Personaliza la apariencia de tu aplicación SaaS', it: 'Personalizza l\'aspetto della tua applicazione SaaS' },
   'admin.appearance.preview': { fr: 'Aperçu', en: 'Preview', es: 'Vista previa', it: 'Anteprima' },
   'admin.appearance.edit': { fr: 'Édition', en: 'Edit', es: 'Edición', it: 'Modifica' },
@@ -93,6 +94,8 @@ const defaultTranslations: Translations = {
   'admin.appearance.colors.success': { fr: 'Succès', en: 'Success', es: 'Éxito', it: 'Successo' },
   'admin.appearance.colors.warning': { fr: 'Avertissement', en: 'Warning', es: 'Advertencia', it: 'Avviso' },
   'admin.appearance.colors.destructive': { fr: 'Destructeur', en: 'Destructive', es: 'Destructivo', it: 'Distruttivo' },
+  'admin.appearance.colors.reset': { fr: 'Réinitialiser', en: 'Reset', es: 'Restablecer', it: 'Reimposta' },
+  'admin.appearance.colors.description': { fr: 'Personnalisez les couleurs principales de votre application', en: 'Customize the main colors of your application', es: 'Personaliza los colores principales de tu aplicación', it: 'Personalizza i colori principali della tua applicazione' },
 
   // Branding section
   'admin.appearance.branding.title': { fr: 'Configuration de la marque', en: 'Brand Configuration', es: 'Configuración de marca', it: 'Configurazione del marchio' },
@@ -102,6 +105,7 @@ const defaultTranslations: Translations = {
   'admin.appearance.branding.favicon': { fr: 'Favicon', en: 'Favicon', es: 'Favicon', it: 'Favicon' },
   'admin.appearance.branding.logoPreview': { fr: 'Aperçu du logo', en: 'Logo preview', es: 'Vista previa del logo', it: 'Anteprima del logo' },
   'admin.appearance.branding.faviconPreview': { fr: 'Aperçu du favicon', en: 'Favicon preview', es: 'Vista previa del favicon', it: 'Anteprima del favicon' },
+  'admin.appearance.branding.description': { fr: 'Définissez l\'identité visuelle de votre application', en: 'Define the visual identity of your application', es: 'Define la identidad visual de tu aplicación', it: 'Definisci l\'identità visiva della tua applicazione' },
 
   // Layout section
   'admin.appearance.layout.title': { fr: 'Configuration de la mise en page', en: 'Layout Configuration', es: 'Configuración del diseño', it: 'Configurazione del layout' },
@@ -111,6 +115,7 @@ const defaultTranslations: Translations = {
   'admin.appearance.layout.theme': { fr: 'Thème', en: 'Theme', es: 'Tema', it: 'Tema' },
   'admin.appearance.layout.sidebarPosition': { fr: 'Position de la sidebar (admin)', en: 'Sidebar Position (admin)', es: 'Posición de la barra lateral (admin)', it: 'Posizione della barra laterale (admin)' },
   'admin.appearance.layout.borderRadius': { fr: 'Arrondi des bordures', en: 'Border Radius', es: 'Radio de borde', it: 'Raggio del bordo' },
+  'admin.appearance.layout.description': { fr: 'Personnalisez la disposition et l\'apparence générale', en: 'Customize the layout and general appearance', es: 'Personaliza el diseño y la apariencia general', it: 'Personalizza il layout e l\'aspetto generale' },
 
   // Layout options
   'admin.appearance.layout.default': { fr: 'Par défaut', en: 'Default', es: 'Por defecto', it: 'Predefinito' },
@@ -139,6 +144,7 @@ const defaultTranslations: Translations = {
   'admin.appearance.media.sectionsDesc': { fr: 'Contrôlez l\'affichage des sections médias sur la page d\'accueil', en: 'Control the display of media sections on the homepage', es: 'Controla la visualización de secciones multimedia en la página de inicio', it: 'Controlla la visualizzazione delle sezioni multimediali nella homepage' },
   'admin.appearance.media.sectionsShow': { fr: 'Afficher les sections médias', en: 'Show media sections', es: 'Mostrar secciones multimedia', it: 'Mostra sezioni multimediali' },
   'admin.appearance.media.sectionsInclude': { fr: 'Inclut les carrousels et galeries d\'images sur la landing page', en: 'Includes carousels and image galleries on the landing page', es: 'Incluye carruseles y galerías de imágenes en la página de destino', it: 'Include caroselli e gallerie di immagini nella landing page' },
+  'admin.appearance.media.description': { fr: 'Gérez vos images et vidéos pour personnaliser votre application', en: 'Manage your images and videos to customize your application', es: 'Gestiona tus imágenes y videos para personalizar tu aplicación', it: 'Gestisci le tue immagini e video per personalizzare la tua applicazione' },
 
   // Carousel section
   'admin.appearance.carousel.title': { fr: 'Configuration des carrousels', en: 'Carousel Configuration', es: 'Configuración de carruseles', it: 'Configurazione caroselli' },
@@ -181,6 +187,8 @@ const defaultTranslations: Translations = {
   'admin.appearance.content.titlePlaceholder': { fr: 'Votre titre apparaîtra ici', en: 'Your title will appear here', es: 'Tu título aparecerá aquí', it: 'Il tuo titolo apparirà qui' },
   'admin.appearance.content.subtitlePlaceholder': { fr: 'Votre sous-titre apparaîtra ici', en: 'Your subtitle will appear here', es: 'Tu subtítulo aparecerá aquí', it: 'Il tuo sottotitolo apparirà qui' },
   'admin.appearance.content.ctaButton': { fr: 'Commencer maintenant', en: 'Get Started Now', es: 'Empezar ahora', it: 'Inizia ora' },
+  'admin.appearance.content.title': { fr: 'Configuration du contenu', en: 'Content Configuration', es: 'Configuración del contenido', it: 'Configurazione del contenuto' },
+  'admin.appearance.content.description': { fr: 'Configurez le contenu de votre page d\'accueil', en: 'Configure your homepage content', es: 'Configura el contenido de tu página de inicio', it: 'Configura il contenuto della tua homepage' },
 
   // Upload dialog
   'admin.appearance.upload.title': { fr: 'Ajouter des médias', en: 'Add Media', es: 'Agregar medios', it: 'Aggiungi media' },

@@ -79,14 +79,6 @@ export const Header: React.FC<HeaderProps> = ({ transparent = false }) => {
               {t('nav.home')}
             </Link>
             <Link 
-              to="/features" 
-              className={`hover:text-primary transition-colors ${
-                transparent ? 'text-white/80 hover:text-white' : 'text-muted-foreground'
-              }`}
-            >
-              {t('nav.features')}
-            </Link>
-            <Link 
               to="/pricing" 
               className={`hover:text-primary transition-colors ${
                 transparent ? 'text-white/80 hover:text-white' : 'text-muted-foreground'

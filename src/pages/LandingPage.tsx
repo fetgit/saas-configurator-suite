@@ -14,6 +14,7 @@ import {
   Zap, 
   Users, 
   BarChart3, 
+  Database,
   Lock,
   CheckCircle,
   ArrowRight,
@@ -23,6 +24,21 @@ import {
 export const LandingPage = () => {
   const { t } = useLanguage();
   const { config } = useAppearance();
+
+  // Fonction pour obtenir l'icône dynamiquement
+  const getFeatureIcon = (iconName: string) => {
+    const iconMap: { [key: string]: React.ReactNode } = {
+      'Palette': <Palette className="h-6 w-6" />,
+      'Shield': <Shield className="h-6 w-6" />,
+      'Globe': <Globe className="h-6 w-6" />,
+      'Database': <Database className="h-6 w-6" />,
+      'Users': <Users className="h-6 w-6" />,
+      'Zap': <Zap className="h-6 w-6" />,
+      'BarChart3': <BarChart3 className="h-6 w-6" />,
+      'Settings': <Settings className="h-6 w-6" />
+    };
+    return iconMap[iconName] || <Settings className="h-6 w-6" />;
+  };
 
   // Debug de la configuration hero
   React.useEffect(() => {
@@ -38,6 +54,17 @@ export const LandingPage = () => {
       console.log('🎨 Couleur hero appliquée:', config.heroConfig.backgroundColor);
     }
   }, [config.heroConfig]);
+
+  // Fonction globale pour forcer le rechargement de la configuration
+  React.useEffect(() => {
+    (window as any).forceConfigReload = () => {
+      console.log('🔄 Forçage du rechargement de la configuration...');
+      localStorage.removeItem('appearanceConfig');
+      window.location.reload();
+    };
+    
+    console.log('💡 Utilisez window.forceConfigReload() dans la console pour forcer le rechargement');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -125,150 +152,57 @@ export const LandingPage = () => {
       )}
 
       {/* Features Section */}
+      {config.featuresConfig?.showFeaturesSection !== false && (
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('features.title')}</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              {config.featuresConfig?.title || t('features.title')}
+            </h2>
             <p className="text-lg text-muted-foreground">
-              Découvrez toutes les fonctionnalités qui font de notre SaaS la solution parfaite pour votre entreprise.
+              {config.featuresConfig?.description || "Découvrez toutes les fonctionnalités qui font de notre SaaS la solution parfaite pour votre entreprise."}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1: Personnalisation */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.primary + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
+            {Object.entries(config.featuresConfig?.features || {}).map(([key, feature]) => {
+              if (!feature.enabled) return null;
+              
+              // Couleurs alternées pour les icônes
+              const colors = ['primary', 'success', 'warning'];
+              const colorIndex = Object.keys(config.featuresConfig?.features || {}).indexOf(key) % colors.length;
+              const currentColor = colors[colorIndex] as 'primary' | 'success' | 'warning';
+              
+              return (
+                <Card 
+                  key={key}
+                  className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
+                  style={{ borderRadius: config.layout.borderRadius }}
                 >
-                  <Palette className="h-6 w-6" style={{ color: config.colors.primary }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">{t('features.customizable')}</h3>
-                <p className="text-muted-foreground">
-                  Personnalisez complètement l'apparence, les couleurs, les menus et tous les éléments de votre application.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 2: Sécurité */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.success + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Shield className="h-6 w-6" style={{ color: config.colors.success }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">{t('features.secure')}</h3>
-                <p className="text-muted-foreground">
-                  Système de sécurité avancé avec 3 niveaux d'utilisateurs et gestion complète des permissions.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 3: Multi-langue */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.warning + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Globe className="h-6 w-6" style={{ color: config.colors.warning }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">{t('features.multilingual')}</h3>
-                <p className="text-muted-foreground">
-                  Support natif pour 4 langues : Français, Anglais, Espagnol et Italien avec traductions complètes.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 4: Base de données */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.primary + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Settings className="h-6 w-6" style={{ color: config.colors.primary }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Base de données flexible</h3>
-                <p className="text-muted-foreground">
-                  Connectez-vous à vos bases de données MySQL existantes avec configuration simple et sécurisée.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 5: Performance */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.success + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Zap className="h-6 w-6" style={{ color: config.colors.success }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Haute Performance</h3>
-                <p className="text-muted-foreground">
-                  Architecture moderne et optimisée pour des performances exceptionnelles à grande échelle.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 6: Gestion des utilisateurs */}
-            <Card 
-              className="border-0 shadow-medium hover:shadow-large transition-all duration-300"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ 
-                    backgroundColor: config.colors.warning + '1A',
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Users className="h-6 w-6" style={{ color: config.colors.warning }} />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Gestion complète</h3>
-                <p className="text-muted-foreground">
-                  Interface d'administration complète pour gérer utilisateurs, paramètres et toute l'application.
-                </p>
-              </CardContent>
-            </Card>
+                  <CardContent className="p-8">
+                    <div 
+                      className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
+                      style={{ 
+                        backgroundColor: config.colors[currentColor] + '1A',
+                        borderRadius: config.layout.borderRadius 
+                      }}
+                    >
+                      <div style={{ color: config.colors[currentColor] }}>
+                        {getFeatureIcon(feature.icon)}
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
+                    <p className="text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
+      )}
 
       {/* Section Carrousel - Ajoutée dynamiquement */}
       {config.showMediaSections && (
@@ -299,151 +233,96 @@ export const LandingPage = () => {
       )}
 
       {/* Pricing Section */}
+      {config.pricingConfig?.showPricingSection !== false && (
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('nav.pricing')}</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              {config.pricingConfig?.title || t('nav.pricing')}
+            </h2>
             <p className="text-lg text-muted-foreground">
-              Choisissez l'offre qui correspond le mieux à vos besoins
+              {config.pricingConfig?.description || "Choisissez l'offre qui correspond le mieux à vos besoins"}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Plan Starter */}
-            <Card 
-              className="border-0 shadow-medium"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold mb-4">Starter</h3>
-                <div className="mb-6">
-                  <span className="text-3xl font-bold">29€</span>
-                  <span className="text-muted-foreground">/mois</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Jusqu'à 10 utilisateurs</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>1 base de données</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Support email</span>
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  style={{ borderRadius: config.layout.borderRadius }}
-                >
-                  Commencer
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Plan Pro */}
-            <Card 
-              className="shadow-large relative"
-              style={{ 
-                borderRadius: config.layout.borderRadius,
-                borderWidth: '2px',
-                borderColor: config.colors.primary
-              }}
-            >
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span 
-                  className="px-4 py-1 rounded-full text-sm font-medium flex items-center gap-1 text-white"
-                  style={{ 
-                    backgroundColor: config.colors.primary,
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  <Star className="h-3 w-3" />
-                  Populaire
-                </span>
-              </div>
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold mb-4">Pro</h3>
-                <div className="mb-6">
-                  <span className="text-3xl font-bold">79€</span>
-                  <span className="text-muted-foreground">/mois</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Jusqu'à 100 utilisateurs</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Bases de données illimitées</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Support prioritaire</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>API complète</span>
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full text-white"
-                  style={{ 
-                    backgroundColor: config.colors.primary,
-                    borderRadius: config.layout.borderRadius 
-                  }}
-                >
-                  Commencer
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Plan Enterprise */}
-            <Card 
-              className="border-0 shadow-medium"
-              style={{ borderRadius: config.layout.borderRadius }}
-            >
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold mb-4">Enterprise</h3>
-                <div className="mb-6">
-                  <span className="text-3xl font-bold">199€</span>
-                  <span className="text-muted-foreground">/mois</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Utilisateurs illimités</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Infrastructure dédiée</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Support 24/7</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
-                    <span>Personnalisation complète</span>
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  style={{ borderRadius: config.layout.borderRadius }}
-                >
-                  Nous contacter
-                </Button>
-              </CardContent>
-            </Card>
+            {(config.pricingConfig?.plans || []).map((plan, index) => (
+              <Card 
+                key={plan.id || plan.name}
+                className={`relative ${
+                  plan.popular || plan.highlighted
+                    ? 'shadow-large border-2' 
+                    : 'shadow-medium border-0'
+                }`}
+                style={{ 
+                  borderRadius: config.layout.borderRadius,
+                  borderColor: (plan.popular || plan.highlighted) ? config.colors.primary : undefined
+                }}
+              >
+                {(plan.popular || plan.highlighted) && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span 
+                      className="px-4 py-1 rounded-full text-sm font-medium flex items-center gap-1 text-white"
+                      style={{ 
+                        backgroundColor: config.colors.primary,
+                        borderRadius: config.layout.borderRadius 
+                      }}
+                    >
+                      ⭐ Populaire
+                    </span>
+                  </div>
+                )}
+                
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold mb-4">{plan.name}</h3>
+                  <div className="mb-6">
+                    <span className="text-3xl font-bold">{plan.price}{plan.currency}</span>
+                    <span className="text-muted-foreground">/{plan.period === 'monthly' ? 'mois' : 'an'}</span>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-3">
+                        {feature.included ? (
+                          <CheckCircle className="h-5 w-5" style={{ color: config.colors.success }} />
+                        ) : (
+                          <Lock className="h-5 w-5 text-muted-foreground" />
+                        )}
+                        <span className={feature.included ? '' : 'text-muted-foreground opacity-60'}>
+                          {feature.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className={`w-full ${
+                      (plan.popular || plan.highlighted)
+                        ? 'text-white' 
+                        : 'variant-outline'
+                    }`}
+                    style={{ 
+                      backgroundColor: (plan.popular || plan.highlighted) ? config.colors.primary : undefined,
+                      borderRadius: config.layout.borderRadius 
+                    }}
+                    asChild={!!plan.ctaLink}
+                  >
+                    {plan.ctaLink ? (
+                      <Link to={plan.ctaLink}>
+                        {plan.ctaText}
+                      </Link>
+                    ) : (
+                      plan.ctaText
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA Section */}
+      {config.homepageCTA?.showCTASection !== false && (
       <section 
         className="py-24"
         style={{ 
@@ -453,28 +332,46 @@ export const LandingPage = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Prêt à transformer votre entreprise ?
+              {config.homepageCTA?.title || "Prêt à transformer votre entreprise ?"}
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Rejoignez des milliers d'entreprises qui font déjà confiance à notre solution SaaS.
+              {config.homepageCTA?.description || "Rejoignez des milliers d'entreprises qui font déjà confiance à notre solution SaaS."}
             </p>
-            <Button 
-              size="lg" 
-              asChild 
-              className="bg-white hover:bg-white/90"
-              style={{ 
-                color: config.colors.primary,
-                borderRadius: config.layout.borderRadius 
-              }}
-            >
-              <Link to="/register">
-                Commencer gratuitement
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                asChild 
+                className="bg-white hover:bg-white/90"
+                style={{ 
+                  color: config.colors.primary,
+                  borderRadius: config.layout.borderRadius 
+                }}
+              >
+                <Link to={config.homepageCTA?.primaryButtonLink || "/register"}>
+                  {config.homepageCTA?.primaryButtonText || "Commencer gratuitement"}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              {config.homepageCTA?.secondaryButtonText && (
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="border-white text-white hover:bg-white"
+                  style={{ 
+                    '--hover-color': config.colors.primary 
+                  } as React.CSSProperties}
+                  asChild
+                >
+                  <Link to={config.homepageCTA?.secondaryButtonLink || "/contact"}>
+                    {config.homepageCTA.secondaryButtonText}
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </section>
+      )}
 
       {/* Footer */}
       {config.layout.footerStyle !== 'hidden' && (
@@ -511,8 +408,9 @@ export const LandingPage = () => {
                 <div>
                   <h4 className="font-semibold mb-4">Produit</h4>
                   <ul className="space-y-2">
-                    <li><Link to="/features" className="text-muted-foreground hover:text-foreground">Fonctionnalités</Link></li>
-                    <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground">Tarifs</Link></li>
+                    {config.pricingConfig?.showPricingPage !== false && (
+                      <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground">Tarifs</Link></li>
+                    )}
                     <li><Link to="/documentation" className="text-muted-foreground hover:text-foreground">Documentation</Link></li>
                   </ul>
                 </div>
