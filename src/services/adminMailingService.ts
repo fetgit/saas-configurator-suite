@@ -70,8 +70,8 @@ class AdminMailingService {
       return await this.makeRequest<Campaign[]>('/mailing/campaigns');
     } catch (error) {
       console.error('Erreur lors de la récupération des campagnes:', error);
-      // Retourner des données par défaut en cas d'erreur
-      return this.getDefaultCampaigns();
+      // Retourner un tableau vide au lieu de données mockées
+      return [];
     }
   }
 
@@ -280,6 +280,161 @@ class AdminMailingService {
   calculateBounceRate(bounced: number, sent: number): number {
     if (sent === 0) return 0;
     return Math.round((bounced / sent) * 100 * 10) / 10;
+  }
+
+  // ===================================================================
+  // NOUVELLES MÉTHODES POUR LE SYSTÈME COMPLET
+  // ===================================================================
+
+  // Configuration SMTP
+  async getSMTPConfig(): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/smtp-config');
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la config SMTP:', error);
+      throw error;
+    }
+  }
+
+  async saveSMTPConfig(config: any): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/smtp-config', {
+        method: 'POST',
+        body: JSON.stringify(config)
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la config SMTP:', error);
+      throw error;
+    }
+  }
+
+  async testSMTPConnection(): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/test-smtp', {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error('Erreur lors du test SMTP:', error);
+      throw error;
+    }
+  }
+
+  // Templates
+  async getTemplates(): Promise<any[]> {
+    try {
+      return await this.makeRequest('/mailing/templates');
+    } catch (error) {
+      console.error('Erreur lors de la récupération des templates:', error);
+      return [];
+    }
+  }
+
+  async createTemplate(template: any): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/templates', {
+        method: 'POST',
+        body: JSON.stringify(template)
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création du template:', error);
+      throw error;
+    }
+  }
+
+  async updateTemplate(id: string, template: any): Promise<any> {
+    try {
+      return await this.makeRequest(`/mailing/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(template)
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du template:', error);
+      throw error;
+    }
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    try {
+      await this.makeRequest(`/mailing/templates/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Erreur lors de la suppression du template:', error);
+      throw error;
+    }
+  }
+
+  // Listes de diffusion
+  async getMailingLists(): Promise<any[]> {
+    try {
+      return await this.makeRequest('/mailing/lists');
+    } catch (error) {
+      console.error('Erreur lors de la récupération des listes:', error);
+      return [];
+    }
+  }
+
+  async createMailingList(list: any): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/lists', {
+        method: 'POST',
+        body: JSON.stringify(list)
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création de la liste:', error);
+      throw error;
+    }
+  }
+
+  // Contacts
+  async getContacts(params?: { page?: number; limit?: number; listId?: string }): Promise<any[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.listId) queryParams.append('listId', params.listId);
+
+      const url = `/mailing/contacts${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      return await this.makeRequest(url);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des contacts:', error);
+      return [];
+    }
+  }
+
+  async addContact(contact: any): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/contacts', {
+        method: 'POST',
+        body: JSON.stringify(contact)
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du contact:', error);
+      throw error;
+    }
+  }
+
+  // Envoyer une campagne
+  async sendCampaign(campaignId: string, mailingListIds: string[]): Promise<any> {
+    try {
+      return await this.makeRequest(`/mailing/campaigns/${campaignId}/send`, {
+        method: 'POST',
+        body: JSON.stringify({ mailingListIds })
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi de la campagne:', error);
+      throw error;
+    }
+  }
+
+  // Statistiques
+  async getMailingStats(): Promise<any> {
+    try {
+      return await this.makeRequest('/mailing/stats');
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+      return this.getDefaultStats();
+    }
   }
 }
 

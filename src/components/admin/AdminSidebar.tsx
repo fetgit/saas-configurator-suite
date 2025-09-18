@@ -59,11 +59,14 @@ export function AdminSidebar() {
     { title: 'Toutes les entreprises', url: '/admin/companies', icon: Building2 },
     { title: t('admin.database'), url: '/admin/database', icon: Database },
     { title: t('admin.appearance'), url: '/admin/appearance', icon: Palette },
+    { title: 'Mentions légales', url: '/admin/legal', icon: Scale },
+  ];
+
+  const securityItems = [
     { title: 'Sécurité globale', url: '/admin/security', icon: Shield },
     { title: 'Sécurité intégrée', url: '/admin/security-integrated', icon: Shield },
     { title: 'Headers de sécurité', url: '/admin/security-headers', icon: Shield },
     { title: 'Système', url: '/admin/system', icon: Settings },
-    { title: 'Mentions légales', url: '/admin/legal', icon: Scale },
   ];
 
   const items = isSuperAdmin ? [...adminItems, ...superAdminItems] : adminItems;
@@ -120,14 +123,20 @@ export function AdminSidebar() {
             
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/admin/system" className={getNavCls}>
-                      <Shield className="h-4 w-4 mr-3" />
-                      <span>Système</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {securityItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end 
+                        className={getNavCls}
+                      >
+                        <item.icon className="h-4 w-4 mr-3" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

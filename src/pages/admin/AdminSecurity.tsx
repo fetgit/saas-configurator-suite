@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,60 +15,75 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Shield, AlertTriangle, Lock, Eye, Download, RefreshCw, CheckCircle, XCircle, Clock, Users, Database, Key, Activity, Settings, Ban, Unlock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { adminSecurityService, SecurityEvent, SecurityRule, ApiKey, SecurityMetrics } from "@/services/adminSecurityService";
 
-// Types
-interface SecurityEvent {
-  id: string;
-  type: 'login_failed' | 'login_success' | 'suspicious_activity' | 'admin_action' | 'data_access' | 'permission_denied';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  user: string;
-  ip: string;
-  timestamp: string;
-  description: string;
-  resolved: boolean;
-}
-
-interface SecurityRule {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  severity: 'low' | 'medium' | 'high';
-  actions: string[];
-}
-
-interface ApiKey {
-  id: string;
-  name: string;
-  key: string;
-  permissions: string[];
-  lastUsed: string;
-  created: string;
-  active: boolean;
-}
-
-// Mock data
-const mockSecurityEvents: SecurityEvent[] = [];
-const mockSecurityRules: SecurityRule[] = [];
-const mockApiKeys: ApiKey[] = [];
+// Les types sont maintenant importés du service
 
 export function AdminSecurity() {
   const { toast } = useToast();
-  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>(mockSecurityEvents);
-  const [securityRules, setSecurityRules] = useState<SecurityRule[]>(mockSecurityRules);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(mockApiKeys);
+  const { user, isAuthenticated, isSuperAdmin } = useAuth();
+  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
+  const [securityRules, setSecurityRules] = useState<SecurityRule[]>([]);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [securityMetrics, setSecurityMetrics] = useState<SecurityMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
   const [isCreateApiKeyOpen, setIsCreateApiKeyOpen] = useState(false);
   const [newApiKey, setNewApiKey] = useState({ name: '', permissions: ['read'] });
 
-  // Statistiques de sécurité
-  const securityStats = {
-    totalEvents: securityEvents.length,
-    criticalEvents: securityEvents.filter(e => e.severity === 'critical').length,
-    unresolvedEvents: securityEvents.filter(e => !e.resolved).length,
-    securityScore: 85
+  // Vérification des permissions - Seuls les super admins peuvent accéder
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Charger les données au montage du composant
+  useEffect(() => {
+    loadSecurityData();
+  }, []);
+
+  const loadSecurityData = async () => {
+    setIsLoading(true);
+    try {
+      const [events, rules, keys, metrics] = await Promise.all([
+        adminSecurityService.getSecurityEvents(),
+        adminSecurityService.getSecurityRules(),
+        adminSecurityService.getApiKeys(),
+        adminSecurityService.getSecurityMetrics()
+      ]);
+
+      setSecurityEvents(events);
+      setSecurityRules(rules);
+      setApiKeys(keys);
+      setSecurityMetrics(metrics);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de sécurité:', error);
+      toast({
+        title: "Erreur de chargement",
+        description: "Impossible de charger les données de sécurité.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Statistiques de sécurité basées sur les vraies données
+  const securityStats = securityMetrics ? {
+    totalEvents: securityMetrics.totalEvents,
+    criticalEvents: securityMetrics.criticalEvents,
+    unresolvedEvents: securityMetrics.unresolvedEvents,
+    securityScore: securityMetrics.securityScore
+  } : {
+    totalEvents: 0,
+    criticalEvents: 0,
+    unresolvedEvents: 0,
+    securityScore: 0
   };
 
   const getSeverityColor = (severity: string) => {
@@ -95,7 +111,7 @@ export function AdminSecurity() {
   const resolveSecurityEvent = async (eventId: string) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await adminSecurityService.resolveSecurityEvent(eventId);
       
       setSecurityEvents(prev => prev.map(event =>
         event.id === eventId ? { ...event, resolved: true } : event
@@ -119,7 +135,10 @@ export function AdminSecurity() {
   const toggleSecurityRule = async (ruleId: string) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const rule = securityRules.find(r => r.id === ruleId);
+      if (!rule) return;
+
+      await adminSecurityService.toggleSecurityRule(ruleId, !rule.enabled);
       
       setSecurityRules(prev => prev.map(rule =>
         rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule
@@ -152,20 +171,8 @@ export function AdminSecurity() {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const newKey = await adminSecurityService.createApiKey(newApiKey.name, newApiKey.permissions);
       
-      const generatedKey = `sk_live_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-      
-      const newKey: ApiKey = {
-        id: Date.now().toString(),
-        name: newApiKey.name,
-        key: generatedKey,
-        permissions: newApiKey.permissions,
-        lastUsed: 'Jamais utilisée',
-        created: new Date().toISOString(),
-        active: true
-      };
-
       setApiKeys(prev => [...prev, newKey]);
       setIsCreateApiKeyOpen(false);
       setNewApiKey({ name: '', permissions: ['read'] });
@@ -188,7 +195,7 @@ export function AdminSecurity() {
   const revokeApiKey = async (keyId: string) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await adminSecurityService.revokeApiKey(keyId);
       
       setApiKeys(prev => prev.map(key =>
         key.id === keyId ? { ...key, active: false } : key
@@ -209,27 +216,27 @@ export function AdminSecurity() {
     }
   };
 
-  const exportSecurityReport = () => {
-    const report = {
-      generatedAt: new Date().toISOString(),
-      stats: securityStats,
-      events: securityEvents,
-      rules: securityRules,
-      apiKeys: apiKeys.map(key => ({ ...key, key: key.key.substring(0, 20) + '***' }))
-    };
+  const exportSecurityReport = async () => {
+    try {
+      const blob = await adminSecurityService.exportSecurityReport();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `security-report-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `security-report-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Rapport exporté",
-      description: "Le rapport de sécurité a été téléchargé.",
-    });
+      toast({
+        title: "Rapport exporté",
+        description: "Le rapport de sécurité a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter le rapport de sécurité.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -247,9 +254,9 @@ export function AdminSecurity() {
               <Download className="w-4 h-4 mr-2" />
               Exporter le rapport
             </Button>
-            <Button onClick={() => window.location.reload()}>
+            <Button onClick={loadSecurityData} disabled={isLoading}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Actualiser
+              {isLoading ? 'Actualisation...' : 'Actualiser'}
             </Button>
           </div>
         </div>

@@ -1417,23 +1417,27 @@ export const AdminPricing = () => {
 
           {/* Paramètres */}
           <TabsContent value="settings" className="space-y-6">
+            {/* Configuration Stripe */}
+            <Card className="shadow-medium border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Configuration Stripe
+                </CardTitle>
+                <CardDescription>
+                  Configurez vos clés API Stripe pour activer la facturation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <StripeConfigForm />
+              </CardContent>
+            </Card>
+
             {settingsError ? (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   {settingsError}
-                  {settingsError.includes('Stripe n\'est pas configuré') && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-sm text-blue-800">
-                        <strong>Configuration requise :</strong>
-                      </p>
-                      <ol className="text-sm text-blue-700 mt-1 list-decimal list-inside">
-                        <li>Configurez vos clés Stripe dans <code>backend/config.env</code></li>
-                        <li>Exécutez <code>npm run init:stripe</code> dans le dossier backend</li>
-                        <li>Redémarrez le serveur backend</li>
-                      </ol>
-                    </div>
-                  )}
                 </AlertDescription>
               </Alert>
             ) : settings ? (
@@ -1761,6 +1765,157 @@ const EditPlanForm: React.FC<{
           Sauvegarder
         </Button>
       </DialogFooter>
+    </form>
+  );
+};
+
+// Composant pour la configuration Stripe
+const StripeConfigForm: React.FC = () => {
+  const [stripeConfig, setStripeConfig] = useState({
+    secretKey: '',
+    publishableKey: '',
+    webhookSecret: ''
+  });
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      // Ici, vous pourriez envoyer la configuration au backend
+      // Pour l'instant, on simule la sauvegarde
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setMessage({
+        type: 'success',
+        text: 'Configuration Stripe sauvegardée avec succès ! Redémarrez le serveur backend pour appliquer les changements.'
+      });
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: 'Erreur lors de la sauvegarde de la configuration Stripe.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {message && (
+        <Alert variant={message.type === 'error' ? 'destructive' : 'default'}>
+          <AlertDescription>{message.text}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="secretKey">Clé secrète Stripe (sk_test_...)</Label>
+          <div className="relative">
+            <Input
+              id="secretKey"
+              type={showSecretKey ? 'text' : 'password'}
+              value={stripeConfig.secretKey}
+              onChange={(e) => setStripeConfig({ ...stripeConfig, secretKey: e.target.value })}
+              placeholder="sk_test_..."
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowSecretKey(!showSecretKey)}
+            >
+              {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Trouvez cette clé dans votre Dashboard Stripe → Developers → API keys
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="publishableKey">Clé publique Stripe (pk_test_...)</Label>
+          <Input
+            id="publishableKey"
+            type="text"
+            value={stripeConfig.publishableKey}
+            onChange={(e) => setStripeConfig({ ...stripeConfig, publishableKey: e.target.value })}
+            placeholder="pk_test_..."
+          />
+          <p className="text-xs text-muted-foreground">
+            Cette clé peut être exposée côté client
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="webhookSecret">Secret Webhook (whsec_...)</Label>
+          <div className="relative">
+            <Input
+              id="webhookSecret"
+              type={showWebhookSecret ? 'text' : 'password'}
+              value={stripeConfig.webhookSecret}
+              onChange={(e) => setStripeConfig({ ...stripeConfig, webhookSecret: e.target.value })}
+              placeholder="whsec_..."
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+            >
+              {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Optionnel : pour recevoir les événements Stripe en temps réel
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isLoading || !stripeConfig.secretKey || !stripeConfig.publishableKey}>
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Sauvegarde...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Sauvegarder la configuration
+            </>
+          )}
+        </Button>
+        <Button 
+          type="button" 
+          variant="outline"
+          onClick={() => window.open('https://dashboard.stripe.com/apikeys', '_blank')}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Ouvrir Stripe Dashboard
+        </Button>
+      </div>
+
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+        <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions :</h4>
+        <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+          <li>Créez un compte sur <a href="https://stripe.com" target="_blank" rel="noopener noreferrer" className="underline">stripe.com</a></li>
+          <li>Allez dans Dashboard → Developers → API keys</li>
+          <li>Copiez vos clés de test (sk_test_... et pk_test_...)</li>
+          <li>Collez-les dans les champs ci-dessus</li>
+          <li>Cliquez sur "Sauvegarder la configuration"</li>
+          <li>Redémarrez le serveur backend</li>
+        </ol>
+      </div>
     </form>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AnimatedCard, AnimatedIconCard, AnimatedStatCard } from '@/components/AnimatedCard';
 import { ModernButton } from '@/components/ModernButton';
@@ -6,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Shield, 
   Lock, 
@@ -25,6 +27,7 @@ import {
 } from 'lucide-react';
 
 export const AdminSecurityIntegrated: React.FC = () => {
+  const { user, isAuthenticated, isSuperAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [securityStatus, setSecurityStatus] = useState({
     twoFactor: true,
@@ -36,6 +39,15 @@ export const AdminSecurityIntegrated: React.FC = () => {
     encryption: true,
     rateLimiting: true
   });
+
+  // Vérification des permissions - Seuls les super admins peuvent accéder
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   const [securityMetrics, setSecurityMetrics] = useState({
     totalUsers: 1250,

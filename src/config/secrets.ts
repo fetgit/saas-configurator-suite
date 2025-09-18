@@ -86,15 +86,15 @@ export const loadSecrets = (): AppSecrets => {
         ssl: false
       },
       jwt: {
-        secret: 'dev_jwt_secret_key_12345',
+        secret: '247721d8292dff1f050e951a6184ec54d96e00295f2ce0861a31ae2304072e6842fac75b8678544d177578a64b56f514fdb8d0059bafcb1f91ddecdcd4f3867c',
         expiresIn: '1h',
-        refreshSecret: 'dev_refresh_secret_key_12345',
+        refreshSecret: '446266a28f45176a2a6245840a45014f0cc95baf7b3ecd61cf0864605febf4c37c78cfd596fe4a56049776d148cb55d3b66c631250a498d73ca2906430543799',
         refreshExpiresIn: '7d'
       },
       encryption: {
         algorithm: 'aes-256-gcm',
-        key: 'dev_encryption_key_32_chars_12345',
-        iv: 'dev_iv_16_chars_12'
+        key: '2c9d3321b5e70676822617480fb7d24cdd25fe5b6777607397dba02c43be838b',
+        iv: '7c04edb22d33d65246695a44ceb4ed0f'
       },
       apiKeys: {
         chatbot: 'dev_chatbot_key',

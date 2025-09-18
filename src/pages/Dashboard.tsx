@@ -2,7 +2,6 @@ import React from 'react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
@@ -13,11 +12,9 @@ import {
   Shield, 
   Database, 
   Palette,
-  Crown,
-  User,
-  Building2,
   Scale,
-  Image
+  Image,
+  User
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -29,16 +26,6 @@ export const Dashboard = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-        return <Badge className="bg-gradient-primary text-white"><Crown className="h-3 w-3 mr-1" />Super Admin</Badge>;
-      case 'admin':
-        return <Badge variant="secondary"><Building2 className="h-3 w-3 mr-1" />Admin Client</Badge>;
-      default:
-        return <Badge variant="outline"><User className="h-3 w-3 mr-1" />Utilisateur</Badge>;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -55,9 +42,6 @@ export const Dashboard = () => {
               <p className="text-muted-foreground">
                 Bienvenue sur votre tableau de bord {user?.company && `de ${user.company}`}
               </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {getRoleBadge(user?.role || 'user')}
             </div>
           </div>
         </div>
@@ -222,48 +206,6 @@ export const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Informations sur les niveaux d'accès */}
-            <Card className="shadow-medium border-0">
-              <CardHeader>
-                <CardTitle>Niveaux d'accès</CardTitle>
-                <CardDescription>
-                  Comprendre les différents niveaux d'utilisateurs dans l'application
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <div className="font-medium">Utilisateur</div>
-                      <div className="text-sm text-muted-foreground">
-                        Accès limité aux fonctionnalités de base et à son profil personnel
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
-                    <Building2 className="h-5 w-5 text-secondary-foreground mt-0.5" />
-                    <div>
-                      <div className="font-medium">Admin Client</div>
-                      <div className="text-sm text-muted-foreground">
-                        Gestion des utilisateurs et paramètres de son entreprise uniquement
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-primary/10 rounded-lg">
-                    <Crown className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <div className="font-medium">Super Admin</div>
-                      <div className="text-sm text-muted-foreground">
-                        Contrôle total : toutes les entreprises, configuration globale, base de données
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column - Profil utilisateur */}
@@ -287,10 +229,6 @@ export const Dashboard = () => {
                     <p className="text-muted-foreground">{user.company}</p>
                   </div>
                 )}
-                <div>
-                  <p className="text-sm font-medium">Niveau d'accès</p>
-                  {getRoleBadge(user?.role || 'user')}
-                </div>
                 <div>
                   <p className="text-sm font-medium">Membre depuis</p>
                   <p className="text-muted-foreground">

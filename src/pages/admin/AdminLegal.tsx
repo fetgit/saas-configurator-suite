@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -632,7 +633,7 @@ Pour toute question relative à cette politique de cookies, vous pouvez nous con
                                       const processedLine = line
                                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                         .replace(/\*(.*?)\*/g, '<em>$1</em>');
-                                      return <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: processedLine }} />;
+                                      return <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(processedLine) }} />;
                                     }
                                   })}
                                 </div>

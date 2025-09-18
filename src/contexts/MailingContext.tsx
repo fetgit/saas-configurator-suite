@@ -139,102 +139,106 @@ export function MailingProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Données de démonstration
+  // Charger les vraies données depuis l'API
   useEffect(() => {
-    // Configuration SMTP par défaut
-    setSMTPConfig({
-      host: 'smtp.example.com',
-      port: 587,
-      secure: false,
-      username: 'noreply@example.com',
-      password: '',
-      fromEmail: 'noreply@example.com',
-      fromName: 'Mon SaaS'
-    });
-
-    // Templates par défaut
-    setTemplates([
-      {
-        id: '1',
-        name: 'Email de bienvenue',
-        subject: 'Bienvenue sur {{company_name}} !',
-        htmlContent: `
-          <h1>Bienvenue {{first_name}} !</h1>
-          <p>Nous sommes ravis de vous compter parmi nos utilisateurs.</p>
-          <p>Votre compte a été créé avec succès pour l'entreprise {{company_name}}.</p>
-          <a href="{{login_url}}" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Se connecter</a>
-        `,
-        textContent: 'Bienvenue {{first_name}} ! Nous sommes ravis de vous compter parmi nos utilisateurs.',
-        variables: ['first_name', 'company_name', 'login_url'],
-        category: 'welcome',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '2',
-        name: 'Newsletter mensuelle',
-        subject: 'Nouveautés du mois - {{month_name}}',
-        htmlContent: `
-          <h1>Newsletter {{month_name}}</h1>
-          <p>Découvrez les dernières nouveautés et améliorations.</p>
-          <div>
-            <h2>Nouvelles fonctionnalités</h2>
-            <ul>
-              <li>{{feature_1}}</li>
-              <li>{{feature_2}}</li>
-            </ul>
-          </div>
-        `,
-        textContent: 'Newsletter {{month_name}} - Découvrez les dernières nouveautés.',
-        variables: ['month_name', 'feature_1', 'feature_2'],
-        category: 'newsletter',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ]);
-
-    // Listes par défaut
-    setMailingLists([
-      {
-        id: '1',
-        name: 'Tous les utilisateurs',
-        description: 'Liste principale contenant tous les utilisateurs actifs',
-        contacts: [],
-        tags: ['users', 'active'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '2',
-        name: 'Newsletter',
-        description: 'Utilisateurs abonnés à la newsletter',
-        contacts: [],
-        tags: ['newsletter', 'marketing'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ]);
-
-    // Contacts de démonstration
-    setContacts([]);
-
-    // Campagnes de démonstration
-    setCampaigns([]);
+    loadRealData();
   }, []);
+
+  const loadRealData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Charger la configuration SMTP
+      const smtpResponse = await fetch('/api/admin/mailing/smtp-config');
+      if (smtpResponse.ok) {
+        const smtpData = await smtpResponse.json();
+        if (smtpData.config) {
+          setSMTPConfig({
+            host: smtpData.config.host,
+            port: smtpData.config.port,
+            secure: smtpData.config.secure,
+            username: smtpData.config.username,
+            password: '', // Ne pas charger le mot de passe
+            fromEmail: smtpData.config.fromEmail,
+            fromName: smtpData.config.fromName
+          });
+        }
+      }
+
+      // Charger les templates
+      const templatesResponse = await fetch('/api/admin/mailing/templates');
+      if (templatesResponse.ok) {
+        const templatesData = await templatesResponse.json();
+        setTemplates(templatesData);
+      }
+
+      // Charger les listes de diffusion
+      const listsResponse = await fetch('/api/admin/mailing/lists');
+      if (listsResponse.ok) {
+        const listsData = await listsResponse.json();
+        setMailingLists(listsData);
+      }
+
+      // Charger les contacts
+      const contactsResponse = await fetch('/api/admin/mailing/contacts');
+      if (contactsResponse.ok) {
+        const contactsData = await contactsResponse.json();
+        setContacts(contactsData);
+      }
+
+      // Charger les campagnes
+      const campaignsResponse = await fetch('/api/admin/mailing/campaigns');
+      if (campaignsResponse.ok) {
+        const campaignsData = await campaignsResponse.json();
+        setCampaigns(campaignsData);
+      }
+
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      // En cas d'erreur, utiliser des données par défaut vides
+      setTemplates([]);
+      setMailingLists([]);
+      setContacts([]);
+      setCampaigns([]);
+      setError(null); // Ne pas afficher d'erreur si le backend n'est pas disponible
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Données de démonstration (fallback)
+  useEffect(() => {
+    if (templates.length === 0) {
+      // Templates par défaut si aucun template n'est chargé
+      setTemplates([]);
+    }
+    if (campaigns.length === 0) {
+      setCampaigns([]);
+    }
+  }, [templates.length, campaigns.length]);
 
   // Fonctions SMTP
   const updateSMTPConfig = async (config: SMTPConfig) => {
     setIsLoading(true);
     try {
-      // Simulation d'API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/admin/mailing/smtp-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      const result = await response.json();
       setSMTPConfig(config);
+      return result;
     } catch (err) {
       setError('Erreur lors de la mise à jour de la configuration SMTP');
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -243,9 +247,19 @@ export function MailingProvider({ children }: { children: React.ReactNode }) {
   const testSMTPConnection = async () => {
     setIsLoading(true);
     try {
-      // Simulation de test de connexion
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return true;
+      const response = await fetch('/api/admin/mailing/test-smtp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Test de connexion échoué');
+      }
+
+      const result = await response.json();
+      return result.success;
     } catch (err) {
       setError('Échec du test de connexion SMTP');
       return false;

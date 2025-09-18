@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { SecurityHeadersDisplay } from '@/components/SecurityHeadersDisplay';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Settings, Download, Upload, RefreshCw, Info } from 'lucide-react';
 
 export const AdminSecurityHeaders: React.FC = () => {
+  const { user, isAuthenticated, isSuperAdmin } = useAuth();
   const [environment, setEnvironment] = useState<'development' | 'production'>('development');
   const [generatedHeaders, setGeneratedHeaders] = useState<{ [key: string]: string }>({});
+
+  // Vérification des permissions - Seuls les super admins peuvent accéder
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   // Gérer la génération des headers
   const handleHeadersGenerated = (headers: { [key: string]: string }) => {

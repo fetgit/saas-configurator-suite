@@ -76,14 +76,14 @@ class AdminChatbotService {
   // Récupérer la configuration du chatbot
   async getConfig(): Promise<ChatbotConfig> {
     try {
-      // Pour l'instant, retourner une configuration par défaut
-      // Dans une vraie implémentation, cela viendrait de l'API
-      return this.getDefaultConfig();
+      return await this.makeRequest<ChatbotConfig>('/chatbot/config');
     } catch (error) {
       console.error('Erreur lors de la récupération de la config chatbot:', error);
+      // Retourner la configuration par défaut en cas d'erreur
       return this.getDefaultConfig();
     }
   }
+
 
   // Mettre à jour la configuration du chatbot
   async updateConfig(config: Partial<ChatbotConfig>): Promise<{ message: string; config: ChatbotConfig; timestamp: string }> {
